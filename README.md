@@ -1,73 +1,430 @@
-# React + TypeScript + Vite
+ProbSol Materialised
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A personal problem and solution repository designed to capture thoughts before they disappear.
 
-Currently, two official plugins are available:
+⸻
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Why This Project Exists
 
-## React Compiler
+In day-to-day life, we constantly encounter:
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+* Improvement ideas
+* Learning topics
+* Technical observations
+* Process inefficiencies
+* Potential solutions
+* Personal insights
 
-## Expanding the ESLint configuration
+Most of these thoughts are forgotten because:
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+* There is no time to act immediately
+* The solution is incomplete
+* Work takes priority
+* Notes are scattered across multiple places
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Over time these become a personal “Dead Letter Queue” of unresolved thoughts.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+ProbSol Materialised was created to solve this problem.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+The goal is simple:
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Materialize important thoughts before they are lost.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+⸻
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Core Philosophy
+
+This application is intentionally not:
+
+* A task manager
+* A note-taking application
+* A reminder system
+* A productivity tracker
+
+Instead, it acts as a repository of:
+
+* Problems
+* Solutions
+* Ideas
+* Observations
+
+Everything is treated as a problem waiting to be solved or a solution worth preserving.
+
+⸻
+
+Example Use Cases
+
+Technical
+
+Problem:
+
+Need a better retry architecture for RabbitMQ consumers.
+
+Solution:
+
+Use delayed exchanges instead of immediate retries.
+
+⸻
+
+Problem:
+
+Need to understand Kafka consumer lag monitoring.
+
+Solution:
+
+Use Burrow and Prometheus metrics.
+
+⸻
+
+Personal
+
+Problem:
+
+Need to improve swimming breathing rhythm.
+
+Solution:
+
+Practice bilateral breathing drills twice weekly.
+
+⸻
+
+Learning
+
+Problem:
+
+Need to understand Redis eviction strategies.
+
+Solution:
+
+Read Redis documentation and compare LRU vs LFU.
+
+⸻
+
+Vision
+
+Create a personal knowledge repository that helps users:
+
+1. Capture problems
+2. Capture solutions
+3. Preserve context
+4. Review thoughts later
+5. Eventually analyze patterns and recurring themes
+
+Future versions will evolve toward analytics and visualization.
+
+⸻
+
+V0 Scope
+
+The initial version focuses only on:
+
+Capture
+
+Create:
+
+* Problem
+* Solution
+
+⸻
+
+Store
+
+Persist entries to Google Sheets.
+
+⸻
+
+View
+
+Review all entries chronologically.
+
+⸻
+
+No advanced features were added intentionally.
+
+The goal was to launch quickly and validate the idea.
+
+⸻
+
+Features Implemented
+
+1. Capture Screen
+
+Users can create:
+
+* Problem
+* Solution
+
+Fields:
+
+* Type
+* Title
+* Description
+* Tags
+* Status
+
+Validation:
+
+* Type required
+* Title required
+
+⸻
+
+2. Timeline Screen
+
+Displays all captured entries.
+
+Features:
+
+* Reverse chronological order
+* Entry cards
+* Status badges
+* Type badges
+* Tags
+* Timestamps
+
+⸻
+
+3. Google Sheets Storage
+
+All entries are stored in Google Sheets.
+
+Benefits:
+
+* Free
+* Easy to maintain
+* No database management
+* Easy future analytics
+
+⸻
+
+4. Google Apps Script API
+
+Acts as a lightweight backend.
+
+Responsibilities:
+
+* Create entry
+* Fetch entries
+
+⸻
+
+5. Progressive Web App
+
+The application is built as a PWA.
+
+Benefits:
+
+* Installable on iPhone
+* Installable on Android
+* No App Store required
+* No separate mobile codebase
+* Single deployment target
+
+⸻
+
+Architecture
+
+iPhone / Browser
+        |
+        |
+        v
+React PWA
+        |
+        |
+        v
+Google Apps Script
+        |
+        |
+        v
+Google Sheets
+
+⸻
+
+Technology Stack
+
+Frontend
+
+* React
+* TypeScript
+* Vite
+* React Router
+
+Backend
+
+* Google Apps Script
+
+Storage
+
+* Google Sheets
+
+Deployment
+
+* Vercel (planned)
+
+⸻
+
+Project Structure
+
+src/
+├── components/
+├── hooks/
+├── pages/
+│   ├── CapturePage
+│   └── TimelinePage
+├── services/
+│   └── api.ts
+├── types/
+└── App.tsx
+
+⸻
+
+Data Model
+
+Entry
+
+{
+  id: string
+  type: "Problem" | "Solution"
+  title: string
+  description: string
+  tags: string[]
+  status: "OPEN" | "SOLVED"
+  timestamp: string
+}
+
+⸻
+
+Status System
+
+Problems default to:
+
+OPEN
+
+Solutions default to:
+
+SOLVED
+
+This creates the foundation for future analytics.
+
+⸻
+
+Future Roadmap
+
+V1
+
+Analytics
+
+* Problems captured
+* Solutions captured
+* Solve ratio
+* Problem trends
+* Solution trends
+
+⸻
+
+V2
+
+Dead Letter Queue
+
+Identify:
+
+* Problems not revisited for 30 days
+* Problems not revisited for 60 days
+* Problems not revisited for 90 days
+
+Inspired by message queue dead letter queues.
+
+⸻
+
+V3
+
+Problem → Solution Mapping
+
+Example:
+
+Problem
+|
+v
+Solution
+
+Track how ideas evolve into outcomes.
+
+⸻
+
+V4
+
+Knowledge Graph
+
+Visualize:
+
+* Related problems
+* Related solutions
+* Topic clusters
+* Learning patterns
+
+⸻
+
+V5
+
+AI Layer
+
+Potential features:
+
+* Automatic tagging
+* Similar problem detection
+* Problem summarization
+* Insight generation
+* Weekly reflection reports
+
+⸻
+
+Design Principles
+
+1. Capture quickly
+2. Think later
+3. Minimize friction
+4. Store everything
+5. Optimize for long-term knowledge accumulation
+
+⸻
+
+Current Limitations
+
+This is a V0 release.
+
+Not yet implemented:
+
+* Edit entry
+* Delete entry
+* Search
+* Filtering
+* Analytics
+* Notifications
+* User authentication
+* Offline sync
+* Automated tagging
+* Testing suite
+
+These will be introduced incrementally after validating real-world usage.
+
+⸻
+
+Success Criteria
+
+This project succeeds if it helps users answer:
+
+What important problems did I notice this month?
+
+and
+
+How many of those problems eventually became solutions?
+
+⸻
+
+Author
+
+Anuj Tiwari
+
+Backend Engineer
+
+Built as a personal experiment to capture, preserve, and eventually analyze the problems and solutions encountered in everyday life.
