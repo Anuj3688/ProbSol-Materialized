@@ -1,0 +1,30 @@
+.splash-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--splash-bg, #ffffff);
+  z-index: 9999;
+  pointer-events: none;
+}
+
+.splash-text {
+  font-size: clamp(1.25rem, 5vw, 2.5rem);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--splash-text, #111827);
+  text-align: center;
+}
+
+.splash-text .char {
+  opacity: 0;
+  transform: translateY(8px);
+  display: inline-block;
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+.splash-text .char.visible {
+  opacity: 1;
+  transform: translateY(0);
+}

@@ -110,8 +110,8 @@ export function CapturePage() {
   return (
     <section className="page-stack" aria-labelledby="capture-title">
       <div className="section-heading">
-        <p className="eyebrow">Capture</p>
-        <h2 id="capture-title">Add an entry</h2>
+        <p className="eyebrow">Just Let it Flow</p>
+        <h2 id="capture-title">Time to dump your brains out</h2>
         <p>Capture a problem or solution while the context is still fresh.</p>
       </div>
 

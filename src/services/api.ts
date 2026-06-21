@@ -1,7 +1,7 @@
 import type { CaptureDraft, CaptureType, EntryStatus, TimelineEntry } from '../types'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
-const API_DEBUG = import.meta.env.VITE_API_DEBUG === 'true'
+const API_DEBUG = import.meta.env.VITE_API_DEBUG === 'true' || import.meta.env.DEV
 
 type ApiEntry = {
   id: string
@@ -28,6 +28,13 @@ function debugLog(message: string, data?: unknown) {
 
   if (data === undefined) {
     console.log(`[api] ${message}`)
+    return
+  }
+
+  if (typeof data === 'object' && data !== null) {
+    console.groupCollapsed(`[api] ${message}`)
+    console.log(data)
+    console.groupEnd()
     return
   }
 
