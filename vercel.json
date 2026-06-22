@@ -42,7 +42,7 @@
   "rewrites": [
     {
       "source": "/api",
-      "destination": "https://script.google.com/macros/s/AKfycby6u6gsxdmFqWB2EgJJ-0JKqZlJM7epnCIGPTzq4TOpzPCLRH2XFTPsjpfURh-Uwt7ZJw/exec"
+      "destination": "https://script.google.com/macros/s/AKfycbzazDgvK9JdDrtkBAiFR7-Glxkgc2xT3pSK3HMJULuutduAxeRwCkk7XIcm_7pjJaOg7g/exec"
     },
     {
       "source": "/(.*)",

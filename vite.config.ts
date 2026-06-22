@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const googleAppsScriptUrl =
     env.VITE_GOOGLE_APPS_SCRIPT_URL ||
-    'https://script.google.com/macros/s/AKfycby6u6gsxdmFqWB2EgJJ-0JKqZlJM7epnCIGPTzq4TOpzPCLRH2XFTPsjpfURh-Uwt7ZJw/exec'
+    'https://script.google.com/macros/s/AKfycbzazDgvK9JdDrtkBAiFR7-Glxkgc2xT3pSK3HMJULuutduAxeRwCkk7XIcm_7pjJaOg7g/exec'
 
   return {
     server: {
@@ -21,10 +21,18 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    build: {
+      cssMinify: 'esbuild',
+    },
     plugins: [
       react(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: 'auto',
+        devOptions: {
+          enabled: true,
+          type: 'module',
+        },
         includeAssets: [
           'favicon.svg',
           'apple-touch-icon.png',
@@ -45,10 +53,25 @@ export default defineConfig(({ mode }) => {
           theme_color: '#4f46e5',
           background_color: '#f7f8fb',
           display: 'standalone',
-          display_override: ['standalone', 'minimal-ui'],
-          orientation: 'portrait',
+          display_override: ['standalone', 'minimal-ui', 'browser'],
+          orientation: 'portrait-primary',
           start_url: '/',
           scope: '/',
+          categories: ['productivity', 'utilities'],
+          screenshots: [
+            {
+              src: '/favicon.svg',
+              sizes: '192x192',
+              form_factor: 'narrow',
+              type: 'image/svg+xml',
+            },
+            {
+              src: '/favicon.svg',
+              sizes: '512x512',
+              form_factor: 'wide',
+              type: 'image/svg+xml',
+            },
+          ],
           icons: [
             {
               src: '/favicon.svg',
@@ -73,6 +96,12 @@ export default defineConfig(({ mode }) => {
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
+            },
+            {
+              src: '/apple-touch-icon.png',
+              sizes: '180x180',
+              type: 'image/png',
+              purpose: 'any',
             },
           ],
         },
