@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.VITE_API_BASE_URL
+const API_BASE_URL = (globalThis as any).process?.env?.VITE_API_BASE_URL as string | undefined
 
 export default async function handler(req: any, res: any) {
   if (!API_BASE_URL) {
@@ -42,7 +42,8 @@ export default async function handler(req: any, res: any) {
 
     res.status(response.status)
     const body = await response.arrayBuffer()
-    res.send(Buffer.from(body))
+    const bytes = new Uint8Array(body)
+    res.send(bytes)
   } catch (error) {
     res.status(502).json({
       success: false,
