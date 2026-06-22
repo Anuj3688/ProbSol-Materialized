@@ -154,7 +154,7 @@ export async function createEntry(entry: CreateEntryPayload): Promise<TimelineEn
   const createdEntry = await request<ApiEntry>({
     method: 'POST',
     headers: {
-      'Content-Type': 'text/plain;charset=utf-8',
+      'Content-Type': 'application/json;charset=utf-8',
     },
     body: JSON.stringify({
       type: toApiType(entry.type),
@@ -195,7 +195,7 @@ export async function updateEntryStatus(
   const updatedEntry = await request<ApiEntry>({
     method: 'POST',
     headers: {
-      'Content-Type': 'text/plain;charset=utf-8',
+      'Content-Type': 'application/json;charset=utf-8',
     },
     body: JSON.stringify({
       action: 'updateStatus',
