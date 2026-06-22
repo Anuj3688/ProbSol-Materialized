@@ -128,6 +128,7 @@ body {
   min-height: 100svh;
   margin: 0;
   background: var(--bg-image), var(--bg);
+}
 
 h1,
 h2,
@@ -157,4 +158,5 @@ h3 {
 
 #root {
   min-height: 100svh;
+}
 }
