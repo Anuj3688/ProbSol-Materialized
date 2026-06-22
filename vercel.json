@@ -41,10 +41,6 @@
   ],
   "rewrites": [
     {
-      "source": "/api",
-      "destination": "https://script.google.com/macros/s/AKfycbzazDgvK9JdDrtkBAiFR7-Glxkgc2xT3pSK3HMJULuutduAxeRwCkk7XIcm_7pjJaOg7g/exec"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

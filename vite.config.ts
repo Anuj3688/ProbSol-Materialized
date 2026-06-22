@@ -5,22 +5,20 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const googleAppsScriptUrl =
-    env.VITE_GOOGLE_APPS_SCRIPT_URL ||
-    'https://script.google.com/macros/s/AKfycbzazDgvK9JdDrtkBAiFR7-Glxkgc2xT3pSK3HMJULuutduAxeRwCkk7XIcm_7pjJaOg7g/exec'
+  const apiBaseUrl = env.VITE_API_BASE_URL
 
   return {
-    server: {
+    server: mode === 'development' && apiBaseUrl ? {
       proxy: {
         '/api': {
-          target: googleAppsScriptUrl,
+          target: apiBaseUrl,
           changeOrigin: true,
           secure: true,
           followRedirects: true,
           rewrite: () => '',
         },
       },
-    },
+    } : {},
     build: {
       cssMinify: 'esbuild',
     },

@@ -1,6 +1,7 @@
 import type { CaptureDraft, CaptureType, EntryStatus, TimelineEntry } from '../types'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+const rawApiBaseUrl = import.meta.env.VITE_API_BASE_URL
+const API_BASE_URL = import.meta.env.DEV ? '/api' : rawApiBaseUrl
 const API_DEBUG = import.meta.env.VITE_API_DEBUG === 'true' || import.meta.env.DEV
 
 type ApiEntry = {
