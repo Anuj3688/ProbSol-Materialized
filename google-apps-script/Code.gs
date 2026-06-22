@@ -7,12 +7,86 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  return addEntry(e);
-}
-
-function addEntry(e) {
   try {
     const body = parseRequestBody(e);
+    const action = body.action || (e.parameter && e.parameter.action);
+
+    if (action === 'updateStatus') {
+      return updateEntryStatus(body);
+    }
+
+    return addEntry(body);
+  } catch (error) {
+    return jsonResponse({
+      success: false,
+      error: error.message,
+    });
+  }
+}
+
+function updateEntryStatus(data) {
+  try {
+    const { id, status } = data;
+
+    if (!id) {
+      return jsonResponse({
+        success: false,
+        error: 'ID is required',
+      });
+    }
+
+    if (!['OPEN', 'SOLVED'].includes(status)) {
+      return jsonResponse({
+        success: false,
+        error: 'Status must be OPEN or SOLVED',
+      });
+    }
+
+    const sheet = getOrCreateEntriesSheet();
+    const values = sheet.getDataRange().getValues();
+
+    let foundRow = -1;
+    for (let i = 1; i < values.length; i++) {
+      if (values[i][0] === id) {
+        foundRow = i;
+        break;
+      }
+    }
+
+    if (foundRow === -1) {
+      return jsonResponse({
+        success: false,
+        error: 'Entry not found',
+      });
+    }
+
+    sheet.getRange(foundRow + 1, 3).setValue(status);
+
+    const updatedRow = sheet.getRange(foundRow + 1, 1, 1, 7).getValues()[0];
+    const updatedEntry = {
+      id: updatedRow[0],
+      type: updatedRow[1],
+      status: updatedRow[2],
+      title: updatedRow[3],
+      description: updatedRow[4],
+      tags: parseTagsFromCell(updatedRow[5]),
+      timestamp: updatedRow[6],
+    };
+
+    return jsonResponse({
+      success: true,
+      data: updatedEntry,
+    });
+  } catch (error) {
+    return jsonResponse({
+      success: false,
+      error: error.message,
+    });
+  }
+}
+
+function addEntry(body) {
+  try {
     const type = normalizeType(body.type);
     const status = normalizeStatus(body.status, type);
     const title = normalizeText(body.title);
@@ -119,15 +193,20 @@ function getOrCreateEntriesSheet() {
 }
 
 function parseRequestBody(e) {
-  if (!e || !e.postData || !e.postData.contents) {
-    return {};
+  const hasPostData = e && e.postData && e.postData.contents;
+  if (hasPostData) {
+    try {
+      return JSON.parse(e.postData.contents);
+    } catch (error) {
+      throw new Error('Invalid JSON body');
+    }
   }
 
-  try {
-    return JSON.parse(e.postData.contents);
-  } catch (error) {
-    throw new Error('Invalid JSON body');
+  if (e && e.parameter) {
+    return e.parameter;
   }
+
+  return {};
 }
 
 function validateEntry(entry) {
