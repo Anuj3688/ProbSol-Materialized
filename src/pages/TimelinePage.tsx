@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { TimelineEntry } from '../types'
-import { getEntries } from '../services/api'
+import type { EntryStatus, TimelineEntry } from '../types'
+import { getEntries, updateEntryStatus } from '../services/api'
 
 const dateFormatter = new Intl.DateTimeFormat(undefined, {
   month: 'short',
@@ -13,6 +13,7 @@ export function TimelinePage() {
   const [entries, setEntries] = useState<TimelineEntry[]>([])
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading')
   const [errorMessage, setErrorMessage] = useState('')
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
   const isLoading = status === 'loading'
 
   const sortedEntries = useMemo(
@@ -37,6 +38,27 @@ export function TimelinePage() {
       setStatus('error')
     }
   }, [])
+
+  const handleStatusToggle = useCallback(
+    async (entryId: string, currentStatus: EntryStatus) => {
+      const newStatus: EntryStatus = currentStatus === 'OPEN' ? 'SOLVED' : 'OPEN'
+      setUpdatingId(entryId)
+
+      try {
+        const updatedEntry = await updateEntryStatus(entryId, newStatus)
+        setEntries((prevEntries) =>
+          prevEntries.map((entry) => (entry.id === entryId ? updatedEntry : entry)),
+        )
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Failed to update status'
+        console.error('Status update failed:', errorMsg)
+        setErrorMessage(errorMsg)
+      } finally {
+        setUpdatingId(null)
+      }
+    },
+    [],
+  )
 
   useEffect(() => {
     loadEntries()
@@ -94,9 +116,16 @@ export function TimelinePage() {
               <div className="timeline-meta">
                 <div className="timeline-badges">
                   <span className={`type-badge type-${entry.type}`}>{entry.type}</span>
-                  <span className={`status-badge status-${entry.status.toLowerCase()}`}>
-                    {entry.status}
-                  </span>
+                  <button
+                    type="button"
+                    className={`status-badge status-${entry.status.toLowerCase()}`}
+                    onClick={() => handleStatusToggle(entry.id, entry.status)}
+                    disabled={updatingId === entry.id}
+                    title={`Click to toggle status from ${entry.status} to ${entry.status === 'OPEN' ? 'SOLVED' : 'OPEN'}`}
+                    aria-label={`Toggle status from ${entry.status}`}
+                  >
+                    {updatingId === entry.id ? 'Updating...' : entry.status}
+                  </button>
                 </div>
                 <time dateTime={entry.createdAt}>{dateFormatter.format(new Date(entry.createdAt))}</time>
               </div>

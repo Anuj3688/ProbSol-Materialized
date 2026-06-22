@@ -5,7 +5,7 @@
 }
 
 .app-header {
-  padding: 28px 20px 18px;
+  padding: max(28px, env(safe-area-inset-top)) 20px 18px;
   border-bottom: 1px solid var(--border);
 }
 
@@ -424,6 +424,44 @@
   text-transform: capitalize;
 }
 
+.status-badge {
+  border: 0;
+  background: inherit;
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 160ms ease, transform 160ms ease;
+  padding: 6px 12px;
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.status-badge:hover:not(:disabled) {
+  opacity: 0.85;
+  transform: scale(1.05);
+}
+
+.status-badge:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.status-badge:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.status-badge:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.type-badge,
+.priority-pill {
+  display: inline-block;
+}
+
 .type-problem {
   background: var(--problem-soft);
   color: var(--problem);
@@ -482,7 +520,7 @@ textarea:focus-visible {
 
 @media (min-width: 720px) {
   .app-header {
-    padding: 40px 32px 28px;
+    padding: max(40px, env(safe-area-inset-top)) 32px 28px;
   }
 
   .app-header h1 {

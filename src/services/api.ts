@@ -185,3 +185,26 @@ export async function getEntries(): Promise<TimelineEntry[]> {
   debugLog('getEntries normalized result', normalizedEntries)
   return normalizedEntries
 }
+
+export async function updateEntryStatus(
+  id: string,
+  newStatus: EntryStatus,
+): Promise<TimelineEntry> {
+  debugLog('updateEntryStatus called', { id, newStatus })
+
+  const updatedEntry = await request<ApiEntry>({
+    method: 'POST',
+    headers: {
+      'Content-Type': 'text/plain;charset=utf-8',
+    },
+    body: JSON.stringify({
+      action: 'updateStatus',
+      id,
+      status: newStatus,
+    }),
+  })
+
+  const normalizedEntry = normalizeEntry(updatedEntry)
+  debugLog('updateEntryStatus result', normalizedEntry)
+  return normalizedEntry
+}
