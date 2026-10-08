@@ -25,10 +25,12 @@ export default async function handler(req: ProxyRequest, res: ProxyResponse) {
     return
   }
 
-  const targetUrl = API_BASE_URL.replace(/\/+$|(?<=https?:\/\/[^/]+)$/, '')
+  const targetUrl = API_BASE_URL.replace(/\/+$/, '')
   const requestUrl = new URL(req.url || '/', `http://${req.headers?.host || 'localhost'}`)
-  const forwardPath = requestUrl.pathname.replace(/^\/api/, '') || ''
-  const target = `${targetUrl}${forwardPath ? (forwardPath.startsWith('/') ? '' : '/') + forwardPath : ''}${requestUrl.search}`
+  const pathname = targetUrl.endsWith('/api')
+    ? requestUrl.pathname.replace(/^\/api/, '') || ''
+    : requestUrl.pathname
+  const target = `${targetUrl}${pathname.startsWith('/') ? '' : '/'}${pathname}${requestUrl.search}`
 
   const headers: Record<string, string> = {}
   for (const [key, value] of Object.entries(req.headers || {})) {

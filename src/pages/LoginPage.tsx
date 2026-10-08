@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { getBackendMode } from '../services/api'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -9,6 +10,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const isApiMode = getBackendMode() === 'api'
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -21,6 +23,21 @@ export function LoginPage() {
     setError('')
     try {
       await login(email.trim(), password)
+      navigate('/timeline')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Invalid credentials')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSeedLogin = async () => {
+    setEmail('anuj@probsol.dev')
+    setPassword('Password123!')
+    setIsLoading(true)
+    setError('')
+    try {
+      await login('anuj@probsol.dev', 'Password123!')
       navigate('/timeline')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Invalid credentials')
@@ -42,8 +59,29 @@ export function LoginPage() {
         <p>Keep your problems, solutions, and engineering thoughts private and organized.</p>
       </div>
 
-      {/* 1-Click Demo Profiles for Seamless Testing */}
-      {demoUsers.length > 0 ? (
+      {/* 1-Click Authentication Card */}
+      {isApiMode ? (
+        <div className="demo-accounts-card">
+          <p className="demo-card-title">⚡ Backend Seed Account</p>
+          <p className="demo-card-subtitle">
+            1-Click authenticate with the active Render backend seed account:
+          </p>
+          <div className="demo-user-buttons">
+            <button
+              type="button"
+              className="demo-user-btn"
+              onClick={handleSeedLogin}
+              disabled={isLoading}
+            >
+              <span className="demo-avatar">A</span>
+              <span className="demo-details">
+                <strong>Anuj Tiwari</strong>
+                <small>anuj@probsol.dev • Password123!</small>
+              </span>
+            </button>
+          </div>
+        </div>
+      ) : demoUsers.length > 0 ? (
         <div className="demo-accounts-card">
           <p className="demo-card-title">⚡ Quick 1-Click Multi-User Demo</p>
           <p className="demo-card-subtitle">
