@@ -1,3 +1,5 @@
+/// <reference types="node" />
+
 interface ProxyRequest {
   url?: string
   method?: string
