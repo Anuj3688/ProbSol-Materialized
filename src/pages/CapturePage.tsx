@@ -1,34 +1,27 @@
-import { useMemo, useState } from 'react'
-import type { FormEvent } from 'react'
-import type { CaptureDraft, CaptureType, EntryStatus } from '../types'
-import { createEntry } from '../services/api'
-
-const captureTypes: Array<{ value: CaptureType; label: string }> = [
-  { value: 'problem', label: 'Problem' },
-  { value: 'solution', label: 'Solution' },
-]
-
-const statusOptions: EntryStatus[] = ['OPEN', 'SOLVED']
-
-type CaptureErrors = {
-  type?: string
-  title?: string
-}
-
-type SubmitStatus = 'idle' | 'loading' | 'success' | 'error'
+import { useEffect, useMemo, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { Link } from 'react-router-dom'
+import type { CaptureDraft, CaptureType, EntryStatus, TagSummary } from '../types'
+import { createEntry, getTags } from '../services/api'
+import { useAuth } from '../hooks/useAuth'
 
 export function CapturePage() {
-  const [type, setType] = useState<CaptureType | ''>('')
+  const { user } = useAuth()
+  const [type, setType] = useState<CaptureType>('problem')
   const [status, setStatus] = useState<EntryStatus>('OPEN')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [tags, setTags] = useState('')
-  const [errors, setErrors] = useState<CaptureErrors>({})
-  const [savedDraft, setSavedDraft] = useState<CaptureDraft | null>(null)
-  const [submitStatus, setSubmitStatus] = useState<SubmitStatus>('idle')
+  const [availableTags, setAvailableTags] = useState<TagSummary[]>([])
+  const [titleError, setTitleError] = useState('')
+  const [savedEntryId, setSavedEntryId] = useState<string | null>(null)
+  const [submitStatus, setSubmitStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [submitMessage, setSubmitMessage] = useState('')
 
   const isSubmitting = submitStatus === 'loading'
+
+  useEffect(() => {
+    getTags().then(setAvailableTags).catch(() => setAvailableTags([]))
+  }, [user?.id])
 
   const parsedTags = useMemo(
     () =>
@@ -39,41 +32,28 @@ export function CapturePage() {
     [tags],
   )
 
-  const validate = () => {
-    const nextErrors: CaptureErrors = {}
-
-    if (!type) {
-      nextErrors.type = 'Choose Problem or Solution.'
-    }
-
-    if (!title.trim()) {
-      nextErrors.title = 'Title is required.'
-    }
-
-    setErrors(nextErrors)
-    return Object.keys(nextErrors).length === 0
+  const handleTypeSelect = (nextType: CaptureType) => {
+    setType(nextType)
+    setStatus(nextType === 'problem' ? 'OPEN' : 'SOLVED')
+    setSubmitMessage('')
   }
 
-  const resetForm = () => {
-    setType('')
-    setStatus('OPEN')
-    setTitle('')
-    setDescription('')
-    setTags('')
-    setErrors({})
+  const handleStatusSelect = (nextStatus: EntryStatus) => {
+    setStatus(nextStatus)
+    setSubmitMessage('')
   }
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  const handleSubmit = async (event?: FormEvent) => {
+    if (event) event.preventDefault()
     setSubmitMessage('')
 
-    if (!validate()) {
-      setSubmitStatus('idle')
+    if (!title.trim()) {
+      setTitleError('Title is required')
       return
     }
 
     const nextDraft: CaptureDraft = {
-      type: type as CaptureType,
+      type,
       status,
       title: title.trim(),
       description: description.trim(),
@@ -83,175 +63,206 @@ export function CapturePage() {
     setSubmitStatus('loading')
 
     try {
-      await createEntry(nextDraft)
-      setSavedDraft(nextDraft)
+      const created = await createEntry(nextDraft)
+      setSavedEntryId(created.id)
       setSubmitStatus('success')
-      setSubmitMessage('Saved to Google Sheets.')
-      resetForm()
+      setSubmitMessage('Entry saved to vault.')
+      setTitle('')
+      setDescription('')
+      setTags('')
+      setTitleError('')
+      getTags().then(setAvailableTags).catch(() => {})
     } catch (error) {
       setSubmitStatus('error')
       setSubmitMessage(error instanceof Error ? error.message : 'Unable to save entry.')
     }
   }
 
-  const handleTypeChange = (nextType: CaptureType) => {
-    setType(nextType)
-    setStatus(nextType === 'problem' ? 'OPEN' : 'SOLVED')
-    setErrors((currentErrors) => ({ ...currentErrors, type: undefined }))
-    setSubmitMessage('')
+  // Support Cmd/Ctrl + Enter to quickly save note
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault()
+      handleSubmit()
+    }
   }
 
-  const handleTitleChange = (nextTitle: string) => {
-    setTitle(nextTitle)
-    setErrors((currentErrors) => ({ ...currentErrors, title: undefined }))
-    setSubmitMessage('')
+  const handleAddTagSuggestion = (tagName: string) => {
+    if (parsedTags.map((t) => t.toLowerCase()).includes(tagName.toLowerCase())) {
+      return
+    }
+    const updated = tags.trim() ? `${tags.trim()}, ${tagName}` : tagName
+    setTags(updated)
   }
 
   return (
-    <section className="page-stack" aria-labelledby="capture-title">
-      <div className="section-heading">
-        <p className="eyebrow">Just Let it Flow</p>
-        <h2 id="capture-title">Time to dump your brains out</h2>
-        <p>Capture a problem or solution while the context is still fresh.</p>
+    <section className="page-stack note-editor-page" aria-labelledby="editor-heading">
+      {/* Discreet Header Bar */}
+      <div className="editor-top-meta">
+        <div className="editor-meta-left">
+          <span className="editor-mode-label">NOTE COMPOSER</span>
+          <span className="editor-breadcrumb">/ {user ? user.displayName : 'personal-vault'}</span>
+        </div>
+        <div className="editor-meta-right">
+          <span className="hotkey-tip">
+            <kbd>⌘</kbd> + <kbd>↵</kbd> to save
+          </span>
+        </div>
       </div>
 
-      <form className="capture-form capture-card" onSubmit={handleSubmit} noValidate>
-        <fieldset className={errors.type ? 'field-group has-error' : 'field-group'}>
-          <legend>
-            Type <span aria-hidden="true">*</span>
-          </legend>
-          <div className="segmented-control two-up" role="radiogroup" aria-describedby="type-error">
-            {captureTypes.map((option) => (
-              <label key={option.value}>
-                <input
-                  type="radio"
-                  name="type"
-                  value={option.value}
-                  checked={type === option.value}
-                  disabled={isSubmitting}
-                  onChange={() => handleTypeChange(option.value)}
-                />
-                <span>{option.label}</span>
-              </label>
-            ))}
+      {/* Main Note Canvas Card */}
+      <form
+        className="note-composer-card"
+        onSubmit={handleSubmit}
+        onKeyDown={handleKeyDown}
+        noValidate
+      >
+        {/* Technical Metadata Toolbar */}
+        <div className="note-toolbar-row">
+          {/* Kind Selector: Problem vs Solution */}
+          <div className="toolbar-segment" role="radiogroup" aria-label="Entry Kind">
+            <span className="toolbar-label">KIND:</span>
+            <div className="tech-pill-group">
+              <button
+                type="button"
+                className={`tech-pill-btn ${type === 'problem' ? 'is-active' : ''}`}
+                onClick={() => handleTypeSelect('problem')}
+                aria-pressed={type === 'problem'}
+              >
+                Problem
+              </button>
+              <button
+                type="button"
+                className={`tech-pill-btn ${type === 'solution' ? 'is-active' : ''}`}
+                onClick={() => handleTypeSelect('solution')}
+                aria-pressed={type === 'solution'}
+              >
+                Solution
+              </button>
+            </div>
           </div>
-          {errors.type ? (
-            <p className="field-error" id="type-error">
-              {errors.type}
-            </p>
-          ) : null}
-        </fieldset>
 
-        <fieldset className="field-group">
-          <legend>Status</legend>
-          <div className="segmented-control two-up" role="radiogroup">
-            {statusOptions.map((option) => (
-              <label key={option}>
-                <input
-                  type="radio"
-                  name="status"
-                  value={option}
-                  checked={status === option}
-                  disabled={isSubmitting}
-                  onChange={() => {
-                    setStatus(option)
-                    setSubmitMessage('')
-                  }}
-                />
-                <span>{option}</span>
-              </label>
-            ))}
+          {/* Status Selector: Open vs Solved */}
+          <div className="toolbar-segment" role="radiogroup" aria-label="Entry Status">
+            <span className="toolbar-label">STATUS:</span>
+            <div className="tech-pill-group">
+              <button
+                type="button"
+                className={`tech-pill-btn ${status === 'OPEN' ? 'is-active' : ''}`}
+                onClick={() => handleStatusSelect('OPEN')}
+                aria-pressed={status === 'OPEN'}
+              >
+                <span className="status-micro-dot dot-open" />
+                Open
+              </button>
+              <button
+                type="button"
+                className={`tech-pill-btn ${status === 'SOLVED' ? 'is-active' : ''}`}
+                onClick={() => handleStatusSelect('SOLVED')}
+                aria-pressed={status === 'SOLVED'}
+              >
+                <span className="status-micro-dot dot-solved" />
+                Solved
+              </button>
+            </div>
           </div>
-        </fieldset>
+        </div>
 
-        <label className={errors.title ? 'field-group has-error' : 'field-group'}>
-          <span>
-            Title <span aria-hidden="true">*</span>
-          </span>
+        {/* Note Title Input */}
+        <div className="note-title-wrapper">
           <input
+            id="note-title-input"
+            className={`note-title-field ${titleError ? 'has-error' : ''}`}
             value={title}
-            onChange={(event) => handleTitleChange(event.target.value)}
-            placeholder="Example: Login takes too long on mobile"
+            onChange={(e) => {
+              setTitle(e.target.value)
+              setTitleError('')
+              setSubmitMessage('')
+            }}
+            placeholder="Title: What problem or breakthrough did you encounter?"
             disabled={isSubmitting}
-            aria-invalid={Boolean(errors.title)}
-            aria-describedby="title-error"
+            autoFocus
           />
-          {errors.title ? (
-            <p className="field-error" id="title-error">
-              {errors.title}
-            </p>
-          ) : null}
-        </label>
+          {titleError ? <p className="field-error-msg">{titleError}</p> : null}
+        </div>
 
-        <label className="field-group">
-          <span>Description</span>
+        {/* Note Description / Body Field */}
+        <div className="note-body-wrapper">
           <textarea
+            id="note-body-textarea"
+            className="note-body-field"
             value={description}
-            onChange={(event) => {
-              setDescription(event.target.value)
+            onChange={(e) => {
+              setDescription(e.target.value)
               setSubmitMessage('')
             }}
-            placeholder="Add observations, constraints, ideas, or next steps."
+            placeholder="Write observations, constraints, stack traces, hypotheses, or resolution steps..."
             disabled={isSubmitting}
-            rows={6}
+            rows={7}
           />
-        </label>
+        </div>
 
-        <label className="field-group">
-          <span>Tags</span>
-          <input
-            value={tags}
-            onChange={(event) => {
-              setTags(event.target.value)
-              setSubmitMessage('')
-            }}
-            placeholder="mobile, onboarding, auth"
-            disabled={isSubmitting}
-          />
-        </label>
-
-        {parsedTags.length > 0 ? (
-          <div className="tag-preview" aria-label="Tags preview">
-            {parsedTags.map((tag) => (
-              <span key={tag}>{tag}</span>
-            ))}
+        {/* Tags Row */}
+        <div className="note-tags-row">
+          <div className="tags-input-group">
+            <span className="tag-prefix">#</span>
+            <input
+              className="note-tags-field"
+              value={tags}
+              onChange={(e) => {
+                setTags(e.target.value)
+                setSubmitMessage('')
+              }}
+              placeholder="tags (comma separated, e.g. redis, latency, architecture)"
+              disabled={isSubmitting}
+            />
           </div>
-        ) : null}
 
-        {submitMessage ? (
-          <p
-            className={`submit-message ${submitStatus === 'error' ? 'is-error' : 'is-success'}`}
-            role={submitStatus === 'error' ? 'alert' : 'status'}
-            aria-live="polite"
-          >
-            {submitMessage}
-          </p>
-        ) : null}
-
-        <button type="submit" className="primary-action" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : 'Save entry'}
-        </button>
-      </form>
-
-      {savedDraft ? (
-        <aside className="draft-preview" aria-label="Saved draft preview">
-          <div>
-            <p className="eyebrow">{savedDraft.type}</p>
-            <h3>{savedDraft.title}</h3>
-          </div>
-          <span className={`status-badge status-${savedDraft.status.toLowerCase()}`}>
-            {savedDraft.status}
-          </span>
-          {savedDraft.description ? <p>{savedDraft.description}</p> : null}
-          {savedDraft.tags.length > 0 ? (
-            <div className="tag-preview">
-              {savedDraft.tags.map((tag) => (
-                <span key={tag}>{tag}</span>
+          {/* Tag Suggestions */}
+          {availableTags.length > 0 ? (
+            <div className="tag-quick-suggestions">
+              {availableTags.slice(0, 6).map((t) => (
+                <button
+                  key={t.name}
+                  type="button"
+                  className="quick-tag-chip"
+                  onClick={() => handleAddTagSuggestion(t.name)}
+                >
+                  +{t.name}
+                </button>
               ))}
             </div>
           ) : null}
-        </aside>
-      ) : null}
+        </div>
+
+        {/* Actions & Feedback Footer */}
+        <div className="note-composer-footer">
+          <div className="footer-status-zone">
+            {submitMessage ? (
+              <span className={`footer-toast ${submitStatus === 'error' ? 'is-error' : 'is-success'}`}>
+                {submitStatus === 'success' ? '✓ ' : '✕ '}
+                {submitMessage}
+                {savedEntryId && submitStatus === 'success' ? (
+                  <Link to="/timeline" className="view-timeline-link">
+                    View in Timeline →
+                  </Link>
+                ) : null}
+              </span>
+            ) : (
+              <span className="footer-hint">Ready to capture thought</span>
+            )}
+          </div>
+
+          <div className="footer-action-zone">
+            <button
+              type="submit"
+              className="tech-save-btn"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? 'Saving...' : 'Save Note'}
+            </button>
+          </div>
+        </div>
+      </form>
     </section>
   )
 }

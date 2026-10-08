@@ -30,7 +30,19 @@ The goal is simple:
 
 Materialize important thoughts before they are lost.
 
-⸻
+---
+
+## Documentation Quick Links
+
+| Document | Purpose |
+|---|---|
+| [ARCHITECTURE.md](file:///Users/anujtiwari/ProbSol%20Materialized/ARCHITECTURE.md) | Technical system architecture, data normalization pipeline, component hierarchy, and PWA design. |
+| [DEVELOPER_GUIDE.md](file:///Users/anujtiwari/ProbSol%20Materialized/DEVELOPER_GUIDE.md) | Local setup, scripts, environment variables, Google Apps Script deployment, and testing. |
+| [BACKEND_API_SPECIFICATION.md](file:///Users/anujtiwari/ProbSol%20Materialized/BACKEND_API_SPECIFICATION.md) | Specification for migrating to a dedicated backend with multi-user authentication, search & filter, and PostgreSQL schema. |
+| [PWA_SETUP.md](file:///Users/anujtiwari/ProbSol%20Materialized/PWA_SETUP.md) | Complete PWA setup, splash screen assets, service worker, and mobile installation guide. |
+| [CHANGELOG.md](file:///Users/anujtiwari/ProbSol%20Materialized/CHANGELOG.md) | Release history, bug fixes, and timeline enhancements. |
+
+---
 
 Core Philosophy
 

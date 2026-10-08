@@ -1,6 +1,20 @@
-const API_BASE_URL = (globalThis as any).process?.env?.VITE_API_BASE_URL as string | undefined
+interface ProxyRequest {
+  url?: string
+  method?: string
+  headers?: Record<string, string | string[] | undefined>
+  body?: unknown
+}
 
-export default async function handler(req: any, res: any) {
+interface ProxyResponse {
+  status: (code: number) => ProxyResponse
+  json: (body: unknown) => void
+  setHeader: (name: string, value: string) => void
+  send: (body: Uint8Array) => void
+}
+
+const API_BASE_URL = process.env.VITE_API_BASE_URL
+
+export default async function handler(req: ProxyRequest, res: ProxyResponse) {
   if (!API_BASE_URL) {
     res.status(500).json({
       success: false,
@@ -9,8 +23,8 @@ export default async function handler(req: any, res: any) {
     return
   }
 
-  const targetUrl = API_BASE_URL.replace(/\/+$|(?<=https?:\/\/[^\/]+)$/, '')
-  const requestUrl = new URL(req.url || '/', `http://${req.headers.host}`)
+  const targetUrl = API_BASE_URL.replace(/\/+$|(?<=https?:\/\/[^/]+)$/, '')
+  const requestUrl = new URL(req.url || '/', `http://${req.headers?.host || 'localhost'}`)
   const forwardPath = requestUrl.pathname.replace(/^\/api/, '') || ''
   const target = `${targetUrl}${forwardPath ? (forwardPath.startsWith('/') ? '' : '/') + forwardPath : ''}${requestUrl.search}`
 
@@ -30,7 +44,7 @@ export default async function handler(req: any, res: any) {
     }
 
     if (req.method !== 'GET' && req.method !== 'HEAD') {
-      fetchOptions.body = req.body && typeof req.body === 'object' ? JSON.stringify(req.body) : req.body
+      fetchOptions.body = req.body && typeof req.body === 'object' ? JSON.stringify(req.body) : String(req.body || '')
     }
 
     const response = await fetch(target, fetchOptions)

@@ -1,210 +1,259 @@
-import type { CaptureDraft, CaptureType, EntryStatus, TimelineEntry } from '../types'
+import type {
+  BackendMode,
+  CaptureDraft,
+  EntryFilterParams,
+  EntryStatus,
+  TagSummary,
+  TimelineEntry,
+  User,
+} from '../types'
+import { mockBackend } from './mockStorage'
 
-const API_BASE_URL = '/api'
-const API_DEBUG = import.meta.env.VITE_API_DEBUG === 'true' || import.meta.env.DEV
+const BACKEND_MODE_KEY = 'probsol_backend_mode_v1'
+const ACCESS_TOKEN_KEY = 'probsol_jwt_token_v1'
 
-type ApiEntry = {
-  id: string
-  type: string
-  title: string
-  description?: string
-  status?: string
-  tags?: string[]
-  timestamp: string
+export function getBackendMode(): BackendMode {
+  const stored = localStorage.getItem(BACKEND_MODE_KEY)
+  if (stored === 'api' || stored === 'mock') {
+    return stored
+  }
+  // Default to mock if env variable is true or default in dev
+  return import.meta.env.VITE_USE_MOCK_API === 'false' ? 'api' : 'mock'
 }
 
-type ApiResponse<T> = {
-  success: boolean
-  data?: T
-  error?: string
+export function setBackendMode(mode: BackendMode) {
+  localStorage.setItem(BACKEND_MODE_KEY, mode)
 }
 
-type CreateEntryPayload = CaptureDraft
-
-function debugLog(message: string, data?: unknown) {
-  if (!API_DEBUG) {
-    return
-  }
-
-  if (data === undefined) {
-    console.log(`[api] ${message}`)
-    return
-  }
-
-  if (typeof data === 'object' && data !== null) {
-    console.groupCollapsed(`[api] ${message}`)
-    console.log(data)
-    console.groupEnd()
-    return
-  }
-
-  console.log(`[api] ${message}`, data)
+export function getAccessToken(): string | null {
+  return localStorage.getItem(ACCESS_TOKEN_KEY)
 }
 
-function debugError(message: string, error: unknown) {
-  if (!API_DEBUG) {
-    return
+export function setAccessToken(token: string | null) {
+  if (token) {
+    localStorage.setItem(ACCESS_TOKEN_KEY, token)
+  } else {
+    localStorage.removeItem(ACCESS_TOKEN_KEY)
   }
-
-  console.error(`[api] ${message}`, error)
 }
 
-function getApiBaseUrl() {
-  if (!API_BASE_URL) {
-    throw new Error('Missing VITE_API_BASE_URL environment variable.')
+// Simulated network latency for mock mode
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+// ---------------------------------------------------------------------------
+// AUTHENTICATION APIs
+// ---------------------------------------------------------------------------
+
+export async function loginUser(email: string, password?: string): Promise<User> {
+  const mode = getBackendMode()
+  if (mode === 'mock') {
+    await sleep(120)
+    const user = mockBackend.login(email)
+    setAccessToken(`mock_jwt_${user.id}_${Date.now()}`)
+    return user
   }
 
-  return String(API_BASE_URL).replace(/\/+$/, '')
+  // Real API implementation (conforms to BACKEND_API_SPECIFICATION.md)
+  const response = await fetch('/api/v1/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, password: password || 'Password123!' }),
+  })
+  const json = await response.json()
+  if (!response.ok || !json.success) {
+    throw new Error(json.error || 'Login failed')
+  }
+  setAccessToken(json.data.accessToken)
+  return json.data.user
 }
 
-async function parseJsonResponse<T>(response: Response): Promise<ApiResponse<T>> {
-  const responseText = await response.text()
+export async function registerUser(email: string, displayName: string, password?: string): Promise<User> {
+  const mode = getBackendMode()
+  if (mode === 'mock') {
+    await sleep(150)
+    const user = mockBackend.register(email, displayName)
+    setAccessToken(`mock_jwt_${user.id}_${Date.now()}`)
+    return user
+  }
 
-  debugLog('raw response text', responseText)
+  const response = await fetch('/api/v1/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, displayName, password: password || 'Password123!' }),
+  })
+  const json = await response.json()
+  if (!response.ok || !json.success) {
+    throw new Error(json.error || 'Registration failed')
+  }
+  setAccessToken(json.data.accessToken)
+  return json.data.user
+}
+
+export async function getCurrentUser(): Promise<User | null> {
+  const mode = getBackendMode()
+  if (mode === 'mock') {
+    return mockBackend.getCurrentUser()
+  }
+
+  const token = getAccessToken()
+  if (!token) return null
 
   try {
-    const payload = JSON.parse(responseText) as ApiResponse<T>
-    debugLog('parsed response payload', payload)
-    return payload
-  } catch (error) {
-    debugError('failed to parse JSON response', error)
-    throw new Error(
-      'API did not return JSON. Check the Apps Script deployment access and URL.',
-    )
-  }
-}
-
-function getErrorMessage<T>(response: Response, payload: ApiResponse<T>) {
-  if (payload.error) {
-    return payload.error
-  }
-
-  return `API returned success=${String(payload.success)} with status ${response.status}.`
-}
-
-async function request<T>(init?: RequestInit): Promise<T> {
-  const url = getApiBaseUrl()
-  const method = init?.method || 'GET'
-
-  debugLog('request start', {
-    url,
-    method,
-    body: init?.body,
-  })
-
-  const response = await fetch(url, init)
-
-  debugLog('response received', {
-    redirected: response.redirected,
-    status: response.status,
-    statusText: response.statusText,
-    type: response.type,
-    url: response.url,
-  })
-
-  const payload = await parseJsonResponse<T>(response)
-
-  if (!response.ok || !payload.success || payload.data === undefined) {
-    const errorMessage = getErrorMessage(response, payload)
-    debugError('request failed', {
-      errorMessage,
-      payload,
-      status: response.status,
+    const response = await fetch('/api/v1/auth/me', {
+      headers: { Authorization: `Bearer ${token}` },
     })
-    throw new Error(errorMessage)
-  }
-
-  debugLog('request success', payload.data)
-  return payload.data
-}
-
-function toApiType(type: CaptureType) {
-  return type === 'problem' ? 'Problem' : 'Solution'
-}
-
-function fromApiType(type: string): CaptureType {
-  return type.toLowerCase() === 'solution' ? 'solution' : 'problem'
-}
-
-function normalizeStatus(status: string | undefined, type: CaptureType): EntryStatus {
-  if (status === 'OPEN' || status === 'SOLVED') {
-    return status
-  }
-
-  return type === 'problem' ? 'OPEN' : 'SOLVED'
-}
-
-function normalizeEntry(entry: ApiEntry): TimelineEntry {
-  const type = fromApiType(entry.type)
-
-  return {
-    id: entry.id,
-    type,
-    status: normalizeStatus(entry.status, type),
-    title: entry.title,
-    description: entry.description || '',
-    tags: Array.isArray(entry.tags) ? entry.tags : [],
-    createdAt: entry.timestamp,
+    const json = await response.json()
+    if (!response.ok || !json.success) return null
+    return json.data
+  } catch {
+    return null
   }
 }
 
-export async function createEntry(entry: CreateEntryPayload): Promise<TimelineEntry> {
-  debugLog('createEntry called', entry)
+export async function logoutUser(): Promise<void> {
+  const mode = getBackendMode()
+  setAccessToken(null)
+  if (mode === 'api') {
+    try {
+      await fetch('/api/v1/auth/logout', { method: 'POST' })
+    } catch {
+      // Ignore network errors on logout
+    }
+  }
+}
 
-  const createdEntry = await request<ApiEntry>({
+// ---------------------------------------------------------------------------
+// ENTRIES & NOTES APIs (with Search & Filtering)
+// ---------------------------------------------------------------------------
+
+export async function getEntries(params: EntryFilterParams = {}): Promise<TimelineEntry[]> {
+  const mode = getBackendMode()
+  if (mode === 'mock') {
+    await sleep(80)
+    return mockBackend.listEntries(params)
+  }
+
+  // Real REST API query string formatting
+  const token = getAccessToken()
+  const searchParams = new URLSearchParams()
+  if (params.q) searchParams.set('q', params.q)
+  if (params.type && params.type !== 'all') searchParams.set('type', params.type)
+  if (params.status && params.status !== 'all') searchParams.set('status', params.status)
+  if (params.tag) searchParams.set('tags', params.tag)
+  if (params.sortBy) searchParams.set('sort', params.sortBy)
+
+  const response = await fetch(`/api/v1/entries?${searchParams.toString()}`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
+  const json = await response.json()
+  if (!response.ok || !json.success) {
+    throw new Error(json.error || 'Failed to fetch entries')
+  }
+  return json.data.items || json.data
+}
+
+export async function createEntry(entry: CaptureDraft): Promise<TimelineEntry> {
+  const mode = getBackendMode()
+  if (mode === 'mock') {
+    await sleep(100)
+    return mockBackend.createEntry(entry)
+  }
+
+  const token = getAccessToken()
+  const response = await fetch('/api/v1/entries', {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json;charset=utf-8',
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({
-      type: toApiType(entry.type),
-      status: entry.status,
-      title: entry.title,
-      description: entry.description,
-      tags: entry.tags,
-    }),
+    body: JSON.stringify(entry),
   })
-
-  const normalizedEntry = normalizeEntry(createdEntry)
-  debugLog('createEntry normalized result', normalizedEntry)
-  return normalizedEntry
+  const json = await response.json()
+  if (!response.ok || !json.success) {
+    throw new Error(json.error || 'Failed to save entry')
+  }
+  return json.data
 }
 
-export async function getEntries(): Promise<TimelineEntry[]> {
-  debugLog('getEntries called')
+export async function updateEntry(id: string, updates: Partial<CaptureDraft>): Promise<TimelineEntry> {
+  const mode = getBackendMode()
+  if (mode === 'mock') {
+    await sleep(60)
+    return mockBackend.updateEntry(id, updates)
+  }
 
-  const entries = await request<ApiEntry[]>()
-
-  const normalizedEntries = entries
-    .map(normalizeEntry)
-    .sort(
-      (firstEntry, secondEntry) =>
-        new Date(secondEntry.createdAt).getTime() - new Date(firstEntry.createdAt).getTime(),
-    )
-
-  debugLog('getEntries normalized result', normalizedEntries)
-  return normalizedEntries
-}
-
-export async function updateEntryStatus(
-  id: string,
-  newStatus: EntryStatus,
-): Promise<TimelineEntry> {
-  debugLog('updateEntryStatus called', { id, newStatus })
-
-  const updatedEntry = await request<ApiEntry>({
-    method: 'POST',
+  const token = getAccessToken()
+  const response = await fetch(`/api/v1/entries/${id}`, {
+    method: 'PATCH',
     headers: {
-      'Content-Type': 'application/json;charset=utf-8',
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     },
-    body: JSON.stringify({
-      action: 'updateStatus',
-      id,
-      status: newStatus,
-    }),
+    body: JSON.stringify(updates),
   })
+  const json = await response.json()
+  if (!response.ok || !json.success) {
+    throw new Error(json.error || 'Failed to update entry')
+  }
+  return json.data
+}
 
-  const normalizedEntry = normalizeEntry(updatedEntry)
-  debugLog('updateEntryStatus result', normalizedEntry)
-  return normalizedEntry
+export async function updateEntryStatus(id: string, newStatus: EntryStatus): Promise<TimelineEntry> {
+  const mode = getBackendMode()
+  if (mode === 'mock') {
+    await sleep(50)
+    return mockBackend.updateEntryStatus(id, newStatus)
+  }
+
+  const token = getAccessToken()
+  const response = await fetch(`/api/v1/entries/${id}/status`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify({ status: newStatus }),
+  })
+  const json = await response.json()
+  if (!response.ok || !json.success) {
+    throw new Error(json.error || 'Failed to update status')
+  }
+  return json.data
+}
+
+export async function deleteEntry(id: string): Promise<boolean> {
+  const mode = getBackendMode()
+  if (mode === 'mock') {
+    await sleep(60)
+    return mockBackend.deleteEntry(id)
+  }
+
+  const token = getAccessToken()
+  const response = await fetch(`/api/v1/entries/${id}`, {
+    method: 'DELETE',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
+  const json = await response.json()
+  return Boolean(json.success)
+}
+
+export async function getTags(): Promise<TagSummary[]> {
+  const mode = getBackendMode()
+  if (mode === 'mock') {
+    return mockBackend.listTags()
+  }
+
+  const token = getAccessToken()
+  const response = await fetch('/api/v1/tags', {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
+  const json = await response.json()
+  if (!response.ok || !json.success) return []
+  return json.data
 }

@@ -2,15 +2,17 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import { useState } from 'react'
 import './App.css'
 import { AppHeader } from './components/AppHeader'
-import { BottomNavigation } from './components/BottomNavigation'
 import { CapturePage } from './pages/CapturePage'
 import { TimelinePage } from './pages/TimelinePage'
+import { LoginPage } from './pages/LoginPage'
+import { RegisterPage } from './pages/RegisterPage'
 import Splash from './components/Splash'
 import type { ThemeMode } from './types'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { usePreferredTheme } from './hooks/usePreferredTheme'
+import { AuthProvider } from './context/AuthContext'
 
-function App() {
+function AppContent() {
   const [showSplash, setShowSplash] = useState(true)
   const [themeMode, setThemeMode] = useLocalStorage<ThemeMode>('probsol-theme', 'system')
 
@@ -20,7 +22,7 @@ function App() {
     <div className="app-shell">
       {showSplash && (
         <Splash
-          durationMs={3000}
+          durationMs={2000}
           onFinish={() => setShowSplash(false)}
         />
       )}
@@ -29,15 +31,23 @@ function App() {
 
       <main className="app-main">
         <Routes>
-          <Route path="/" element={<Navigate to="/capture" replace />} />
+          <Route path="/" element={<Navigate to="/timeline" replace />} />
           <Route path="/capture" element={<CapturePage />} />
           <Route path="/timeline" element={<TimelinePage />} />
-          <Route path="*" element={<Navigate to="/capture" replace />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="*" element={<Navigate to="/timeline" replace />} />
         </Routes>
       </main>
-
-      <BottomNavigation />
     </div>
+  )
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }
 
