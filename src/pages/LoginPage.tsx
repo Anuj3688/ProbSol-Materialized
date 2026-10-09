@@ -5,7 +5,7 @@ import { getBackendMode } from '../services/api'
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { login, demoUsers, switchUser } = useAuth()
+  const { user, isAuthenticated, logout, login, demoUsers, switchUser } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
@@ -58,6 +58,34 @@ export function LoginPage() {
         <h2 id="login-title">Sign in to your repository</h2>
         <p>Keep your problems, solutions, and engineering thoughts private and organized.</p>
       </div>
+
+      {/* Active Session Notice if already signed in */}
+      {isAuthenticated && user ? (
+        <div className="demo-accounts-card" style={{ borderColor: 'var(--accent, #4f46e5)' }}>
+          <p className="demo-card-title">👤 Active Session</p>
+          <p className="demo-card-subtitle">
+            Currently authenticated as <strong>{user.displayName}</strong> ({user.email}).
+          </p>
+          <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.75rem', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="primary-action"
+              onClick={() => navigate('/timeline')}
+            >
+              Continue to Timeline →
+            </button>
+            <button
+              type="button"
+              className="secondary-action"
+              onClick={async () => {
+                await logout()
+              }}
+            >
+              Sign Out / Switch User
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {/* 1-Click Authentication Card */}
       {isApiMode ? (

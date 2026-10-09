@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import './App.css'
 import { AppHeader } from './components/AppHeader'
 import { CapturePage } from './pages/CapturePage'
@@ -11,6 +11,25 @@ import type { ThemeMode } from './types'
 import { useLocalStorage } from './hooks/useLocalStorage'
 import { usePreferredTheme } from './hooks/usePreferredTheme'
 import { AuthProvider } from './context/AuthContext'
+import { useAuth } from './hooks/useAuth'
+
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { isAuthenticated, isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className="page-stack" style={{ textAlign: 'center', padding: '4rem 1rem' }}>
+        <p className="eyebrow">Checking authentication...</p>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <>{children}</>
+}
 
 function AppContent() {
   const [showSplash, setShowSplash] = useState(true)
@@ -31,12 +50,26 @@ function AppContent() {
 
       <main className="app-main">
         <Routes>
-          <Route path="/" element={<Navigate to="/timeline" replace />} />
-          <Route path="/capture" element={<CapturePage />} />
-          <Route path="/timeline" element={<TimelinePage />} />
+          <Route path="/" element={<LoginPage />} />
+          <Route
+            path="/capture"
+            element={
+              <ProtectedRoute>
+                <CapturePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/timeline"
+            element={
+              <ProtectedRoute>
+                <TimelinePage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
-          <Route path="*" element={<Navigate to="/timeline" replace />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>

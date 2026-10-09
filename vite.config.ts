@@ -5,13 +5,22 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const apiBaseUrl = env.VITE_API_BASE_URL
+  const rawApiUrl = env.VITE_API_URL || env.VITE_API_BASE_URL
+  let targetOrigin = rawApiUrl || ''
+  try {
+    if (targetOrigin.startsWith('http')) {
+      const parsed = new URL(targetOrigin)
+      targetOrigin = parsed.origin
+    }
+  } catch {
+    // Keep rawApiUrl as fallback
+  }
 
   return {
-    server: mode === 'development' && apiBaseUrl ? {
+    server: mode === 'development' && targetOrigin ? {
       proxy: {
         '/api': {
-          target: apiBaseUrl,
+          target: targetOrigin,
           changeOrigin: true,
           secure: true,
           followRedirects: true,

@@ -55,6 +55,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  useEffect(() => {
+    const handleExpired = () => {
+      setUser(null)
+      setIsLoading(false)
+    }
+    window.addEventListener('probsol:auth-expired', handleExpired)
+    return () => {
+      window.removeEventListener('probsol:auth-expired', handleExpired)
+    }
+  }, [])
+
   const login = useCallback(
     async (email: string, password?: string) => {
       setIsLoading(true)

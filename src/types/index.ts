@@ -20,6 +20,13 @@ export interface AuthSession {
   accessToken: string
 }
 
+export interface ApiResponse<T> {
+  success: boolean
+  data?: T
+  message?: string
+  error?: string
+}
+
 export type CaptureDraft = {
   type: CaptureType
   status: EntryStatus

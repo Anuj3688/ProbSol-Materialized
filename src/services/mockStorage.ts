@@ -152,16 +152,16 @@ function setStoredEntries(entries: TimelineEntry[]) {
   localStorage.setItem(ENTRIES_KEY, JSON.stringify(entries))
 }
 
-export function getActiveMockUserId(): string {
-  const current = localStorage.getItem(ACTIVE_USER_KEY)
-  if (current) return current
-  const defaultUser = getStoredUsers()[0]?.id || 'usr_anuj'
-  localStorage.setItem(ACTIVE_USER_KEY, defaultUser)
-  return defaultUser
+export function getActiveMockUserId(): string | null {
+  return localStorage.getItem(ACTIVE_USER_KEY)
 }
 
-export function setActiveMockUserId(userId: string) {
-  localStorage.setItem(ACTIVE_USER_KEY, userId)
+export function setActiveMockUserId(userId: string | null) {
+  if (userId) {
+    localStorage.setItem(ACTIVE_USER_KEY, userId)
+  } else {
+    localStorage.removeItem(ACTIVE_USER_KEY)
+  }
 }
 
 export const mockBackend = {
@@ -171,8 +171,13 @@ export const mockBackend = {
 
   getCurrentUser(): User | null {
     const activeId = getActiveMockUserId()
+    if (!activeId) return null
     const users = getStoredUsers()
-    return users.find((user) => user.id === activeId) || users[0] || null
+    return users.find((user) => user.id === activeId) || null
+  },
+
+  logout(): void {
+    setActiveMockUserId(null)
   },
 
   login(email: string): User {
@@ -273,7 +278,7 @@ export const mockBackend = {
     const newEntry: TimelineEntry = {
       ...draft,
       id: `entry_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      userId: currentUserId,
+      userId: currentUserId || undefined,
       createdAt: new Date().toISOString(),
     }
     setStoredEntries([newEntry, ...entries])

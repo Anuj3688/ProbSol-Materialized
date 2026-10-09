@@ -10,27 +10,25 @@ interface ProxyRequest {
 interface ProxyResponse {
   status: (code: number) => ProxyResponse
   json: (body: unknown) => void
-  setHeader: (name: string, value: string) => void
+  setHeader: (name: string, value: string | string[]) => void
   send: (body: Uint8Array) => void
 }
 
-const API_BASE_URL = process.env.VITE_API_BASE_URL
+const API_BASE_URL =
+  process.env.VITE_API_URL ||
+  process.env.VITE_API_BASE_URL ||
+  'https://probsol-backend.onrender.com/api/v1'
 
 export default async function handler(req: ProxyRequest, res: ProxyResponse) {
-  if (!API_BASE_URL) {
-    res.status(500).json({
-      success: false,
-      error: 'Missing VITE_API_BASE_URL environment variable in production.',
-    })
-    return
-  }
-
   const targetUrl = API_BASE_URL.replace(/\/+$/, '')
   const requestUrl = new URL(req.url || '/', `http://${req.headers?.host || 'localhost'}`)
-  const pathname = targetUrl.endsWith('/api')
-    ? requestUrl.pathname.replace(/^\/api/, '') || ''
-    : requestUrl.pathname
-  const target = `${targetUrl}${pathname.startsWith('/') ? '' : '/'}${pathname}${requestUrl.search}`
+  let pathname = requestUrl.pathname
+  if (targetUrl.endsWith('/api/v1')) {
+    pathname = pathname.replace(/^\/api\/v1/, '') || ''
+  } else if (targetUrl.endsWith('/api')) {
+    pathname = pathname.replace(/^\/api/, '') || ''
+  }
+  const target = `${targetUrl}${pathname.startsWith('/') ? '' : (pathname ? '/' : '')}${pathname}${requestUrl.search}`
 
   const headers: Record<string, string> = {}
   for (const [key, value] of Object.entries(req.headers || {})) {
@@ -53,8 +51,17 @@ export default async function handler(req: ProxyRequest, res: ProxyResponse) {
 
     const response = await fetch(target, fetchOptions)
 
+    // Forward Set-Cookie headers properly
+    if ('getSetCookie' in response.headers && typeof response.headers.getSetCookie === 'function') {
+      const cookies = response.headers.getSetCookie()
+      if (cookies && cookies.length > 0) {
+        res.setHeader('Set-Cookie', cookies)
+      }
+    }
+
     for (const [key, value] of response.headers.entries()) {
-      if (key.toLowerCase() === 'transfer-encoding') continue
+      const lower = key.toLowerCase()
+      if (lower === 'transfer-encoding' || lower === 'set-cookie') continue
       res.setHeader(key, value)
     }
 
