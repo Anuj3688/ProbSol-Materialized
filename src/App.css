@@ -47,6 +47,12 @@
   gap: 10px;
   text-decoration: none;
   color: inherit;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
   transition: transform 140ms ease;
 }
 

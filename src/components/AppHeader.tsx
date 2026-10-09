@@ -19,12 +19,26 @@ export function AppHeader({ themeMode, onThemeModeChange }: AppHeaderProps) {
     navigate('/login')
   }
 
+  const handleLogoClick = async () => {
+    setShowUserMenu(false)
+    if (isAuthenticated) {
+      await logout()
+    }
+    navigate('/login')
+  }
+
   return (
     <header className="app-header">
       <div className="app-header-inner">
-        {/* Left: Brand Identity */}
+        {/* Left: Brand Identity (Clicking logo directly logs out and moves to login) */}
         <div className="header-brand-group">
-          <Link to="/timeline" className="brand-link" aria-label="ProbSol Materialised Home">
+          <button
+            type="button"
+            className="brand-link"
+            onClick={handleLogoClick}
+            aria-label="ProbSol Materialised - Sign out and return to login"
+            title="Click to sign out and return to login"
+          >
             <div className="brand-badge-icon" aria-hidden="true">
               <span>⚡</span>
             </div>
@@ -32,7 +46,7 @@ export function AppHeader({ themeMode, onThemeModeChange }: AppHeaderProps) {
               <span className="brand-name">ProbSol</span>
               <span className="brand-tagline">Materialised</span>
             </div>
-          </Link>
+          </button>
         </div>
 
         {/* Center: Primary Navigation (Capture & Timeline) */}
