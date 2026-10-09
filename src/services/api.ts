@@ -8,32 +8,27 @@ import type {
   TimelineEntry,
   User,
 } from '../types'
-import { mockBackend } from './mockStorage'
 
-const BACKEND_MODE_KEY = 'probsol_backend_mode_v1'
 const ACCESS_TOKEN_KEY = 'probsol_jwt_token_v1'
 
 export function getBackendMode(): BackendMode {
-  const stored = localStorage.getItem(BACKEND_MODE_KEY)
-  if (stored === 'api' || stored === 'mock') {
-    return stored
-  }
-  // Default to API if env variable is false or unset in dev
-  return import.meta.env.VITE_USE_MOCK_API === 'false' ? 'api' : 'mock'
+  return 'api'
 }
 
-export function setBackendMode(mode: BackendMode) {
-  localStorage.setItem(BACKEND_MODE_KEY, mode)
+export function setBackendMode() {
+  // Permanently live API mode
 }
 
 export function getAccessToken(): string | null {
-  return localStorage.getItem(ACCESS_TOKEN_KEY)
+  return sessionStorage.getItem(ACCESS_TOKEN_KEY) || localStorage.getItem(ACCESS_TOKEN_KEY)
 }
 
 export function setAccessToken(token: string | null) {
   if (token) {
+    sessionStorage.setItem(ACCESS_TOKEN_KEY, token)
     localStorage.setItem(ACCESS_TOKEN_KEY, token)
   } else {
+    sessionStorage.removeItem(ACCESS_TOKEN_KEY)
     localStorage.removeItem(ACCESS_TOKEN_KEY)
   }
 }
@@ -43,10 +38,14 @@ export function setAccessToken(token: string | null) {
  * Supports:
  * - VITE_API_URL (e.g. http://localhost:8080/api/v1 or https://probsol-backend.onrender.com/api/v1)
  * - VITE_API_BASE_URL (fallback)
- * - Defaults to '/api/v1' for Vite proxy in development
+ * - Defaults to '/api/v1' for local reverse proxy
  */
 export function getApiBaseUrl(): string {
-  const raw = (import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE_URL || '').trim()
+  const raw = (
+    import.meta.env.VITE_API_URL ||
+    import.meta.env.VITE_API_BASE_URL ||
+    ''
+  ).trim()
   const trimmed = raw.replace(/\/+$/, '')
   if (!trimmed) {
     return '/api/v1'
@@ -59,9 +58,6 @@ export function getApiBaseUrl(): string {
   }
   return `${trimmed}/api/v1`
 }
-
-// Simulated network latency for mock mode
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 // ---------------------------------------------------------------------------
 // SILENT REFRESH & INTERCEPTOR LOGIC
@@ -207,14 +203,6 @@ export async function apiClient<T>(
 // ---------------------------------------------------------------------------
 
 export async function loginUser(email: string, password?: string): Promise<User> {
-  const mode = getBackendMode()
-  if (mode === 'mock') {
-    await sleep(120)
-    const user = mockBackend.login(email)
-    setAccessToken(`mock_jwt_${user.id}_${Date.now()}`)
-    return user
-  }
-
   const json = await apiClient<{ user: User; accessToken: string }>('/auth/login', {
     method: 'POST',
     body: JSON.stringify({ email, password: password || 'Password123!' }),
@@ -229,14 +217,6 @@ export async function loginUser(email: string, password?: string): Promise<User>
 }
 
 export async function registerUser(email: string, displayName: string, password?: string): Promise<User> {
-  const mode = getBackendMode()
-  if (mode === 'mock') {
-    await sleep(150)
-    const user = mockBackend.register(email, displayName)
-    setAccessToken(`mock_jwt_${user.id}_${Date.now()}`)
-    return user
-  }
-
   const json = await apiClient<{ user: User; accessToken: string }>('/auth/register', {
     method: 'POST',
     body: JSON.stringify({ email, displayName, password: password || 'Password123!' }),
@@ -251,16 +231,9 @@ export async function registerUser(email: string, displayName: string, password?
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  const mode = getBackendMode()
-  if (mode === 'mock') {
-    return mockBackend.getCurrentUser()
-  }
-
   const token = getAccessToken()
   if (!token) {
-    // Attempt silent refresh first using the HttpOnly refresh cookie
-    const renewed = await refreshAccessToken()
-    if (!renewed) return null
+    return null
   }
 
   try {
@@ -272,14 +245,11 @@ export async function getCurrentUser(): Promise<User | null> {
 }
 
 export async function logoutUser(): Promise<void> {
-  const mode = getBackendMode()
   setAccessToken(null)
-  if (mode === 'api') {
-    try {
-      await apiClient<void>('/auth/logout', { method: 'POST' })
-    } catch {
-      // Ignore network errors on logout
-    }
+  try {
+    await apiClient<void>('/auth/logout', { method: 'POST' })
+  } catch {
+    // Ignore network errors on logout
   }
 }
 
@@ -288,12 +258,6 @@ export async function logoutUser(): Promise<void> {
 // ---------------------------------------------------------------------------
 
 export async function getEntries(params: EntryFilterParams = {}): Promise<TimelineEntry[]> {
-  const mode = getBackendMode()
-  if (mode === 'mock') {
-    await sleep(80)
-    return mockBackend.listEntries(params)
-  }
-
   const searchParams = new URLSearchParams()
   if (params.q) searchParams.set('q', params.q)
   if (params.type && params.type !== 'all') searchParams.set('type', params.type)
@@ -311,12 +275,6 @@ export async function getEntries(params: EntryFilterParams = {}): Promise<Timeli
 }
 
 export async function createEntry(entry: CaptureDraft): Promise<TimelineEntry> {
-  const mode = getBackendMode()
-  if (mode === 'mock') {
-    await sleep(100)
-    return mockBackend.createEntry(entry)
-  }
-
   const json = await apiClient<TimelineEntry>('/entries', {
     method: 'POST',
     body: JSON.stringify(entry),
@@ -328,12 +286,6 @@ export async function createEntry(entry: CaptureDraft): Promise<TimelineEntry> {
 }
 
 export async function updateEntry(id: string, updates: Partial<CaptureDraft>): Promise<TimelineEntry> {
-  const mode = getBackendMode()
-  if (mode === 'mock') {
-    await sleep(60)
-    return mockBackend.updateEntry(id, updates)
-  }
-
   const json = await apiClient<TimelineEntry>(`/entries/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(updates),
@@ -345,12 +297,6 @@ export async function updateEntry(id: string, updates: Partial<CaptureDraft>): P
 }
 
 export async function updateEntryStatus(id: string, newStatus: EntryStatus): Promise<TimelineEntry> {
-  const mode = getBackendMode()
-  if (mode === 'mock') {
-    await sleep(50)
-    return mockBackend.updateEntryStatus(id, newStatus)
-  }
-
   const json = await apiClient<TimelineEntry>(`/entries/${id}/status`, {
     method: 'PATCH',
     body: JSON.stringify({ status: newStatus }),
@@ -362,12 +308,6 @@ export async function updateEntryStatus(id: string, newStatus: EntryStatus): Pro
 }
 
 export async function deleteEntry(id: string): Promise<boolean> {
-  const mode = getBackendMode()
-  if (mode === 'mock') {
-    await sleep(60)
-    return mockBackend.deleteEntry(id)
-  }
-
   const json = await apiClient<{ message?: string }>(`/entries/${id}`, {
     method: 'DELETE',
   })
@@ -375,11 +315,6 @@ export async function deleteEntry(id: string): Promise<boolean> {
 }
 
 export async function getTags(): Promise<TagSummary[]> {
-  const mode = getBackendMode()
-  if (mode === 'mock') {
-    return mockBackend.listTags()
-  }
-
   try {
     const json = await apiClient<TagSummary[]>('/tags')
     return json.data || []

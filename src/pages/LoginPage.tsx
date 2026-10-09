@@ -1,16 +1,14 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { getBackendMode } from '../services/api'
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { user, isAuthenticated, logout, login, demoUsers, switchUser } = useAuth()
+  const { user, isAuthenticated, logout, login } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const isApiMode = getBackendMode() === 'api'
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -44,11 +42,6 @@ export function LoginPage() {
     } finally {
       setIsLoading(false)
     }
-  }
-
-  const handleDemoLogin = (userId: string) => {
-    switchUser(userId)
-    navigate('/timeline')
   }
 
   return (
@@ -87,52 +80,27 @@ export function LoginPage() {
         </div>
       ) : null}
 
-      {/* 1-Click Authentication Card */}
-      {isApiMode ? (
-        <div className="demo-accounts-card">
-          <p className="demo-card-title">⚡ Backend Seed Account</p>
-          <p className="demo-card-subtitle">
-            1-Click authenticate with the active Render backend seed account:
-          </p>
-          <div className="demo-user-buttons">
-            <button
-              type="button"
-              className="demo-user-btn"
-              onClick={handleSeedLogin}
-              disabled={isLoading}
-            >
-              <span className="demo-avatar">A</span>
-              <span className="demo-details">
-                <strong>Anuj Tiwari</strong>
-                <small>anuj@probsol.dev • Password123!</small>
-              </span>
-            </button>
-          </div>
+      {/* 1-Click Authentication Card for Reviewers / Seed Testing */}
+      <div className="demo-accounts-card">
+        <p className="demo-card-title">⚡ Quick Seed Account</p>
+        <p className="demo-card-subtitle">
+          1-Click sign in with the live backend seed account:
+        </p>
+        <div className="demo-user-buttons">
+          <button
+            type="button"
+            className="demo-user-btn"
+            onClick={handleSeedLogin}
+            disabled={isLoading}
+          >
+            <span className="demo-avatar">A</span>
+            <span className="demo-details">
+              <strong>Anuj Tiwari (Seed Account)</strong>
+              <small>anuj@probsol.dev • Password123!</small>
+            </span>
+          </button>
         </div>
-      ) : demoUsers.length > 0 ? (
-        <div className="demo-accounts-card">
-          <p className="demo-card-title">⚡ Quick 1-Click Multi-User Demo</p>
-          <p className="demo-card-subtitle">
-            Test multi-user isolation instantly without typing passwords:
-          </p>
-          <div className="demo-user-buttons">
-            {demoUsers.map((demo) => (
-              <button
-                key={demo.id}
-                type="button"
-                className="demo-user-btn"
-                onClick={() => handleDemoLogin(demo.id)}
-              >
-                <span className="demo-avatar">{demo.displayName.charAt(0)}</span>
-                <span className="demo-details">
-                  <strong>{demo.displayName}</strong>
-                  <small>{demo.email}</small>
-                </span>
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
+      </div>
 
       <div className="auth-card">
         <form onSubmit={handleSubmit} className="auth-form" noValidate>

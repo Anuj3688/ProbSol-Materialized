@@ -12,19 +12,16 @@ import {
   logoutUser,
   registerUser,
 } from '../services/api'
-import { mockBackend } from '../services/mockStorage'
 import { AuthContext } from './authContextDef'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [demoUsers, setDemoUsers] = useState<User[]>([])
 
   const loadProfile = useCallback(async () => {
     try {
       const currentUser = await getCurrentUser()
       setUser(currentUser)
-      setDemoUsers(mockBackend.getDemoUsers())
     } catch (err) {
       console.error('Failed to load user profile:', err)
       setUser(null)
@@ -39,7 +36,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((currentUser) => {
         if (!ignore) {
           setUser(currentUser)
-          setDemoUsers(mockBackend.getDemoUsers())
           setIsLoading(false)
         }
       })
@@ -72,7 +68,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const loggedIn = await loginUser(email, password)
         setUser(loggedIn)
-        setDemoUsers(mockBackend.getDemoUsers())
         return loggedIn
       } finally {
         setIsLoading(false)
@@ -87,7 +82,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const registered = await registerUser(email, displayName, password)
         setUser(registered)
-        setDemoUsers(mockBackend.getDemoUsers())
         return registered
       } finally {
         setIsLoading(false)
@@ -106,11 +100,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const switchUser = useCallback((userId: string) => {
-    const switched = mockBackend.switchUser(userId)
-    if (switched) {
-      setUser(switched)
-    }
+  const switchUser = useCallback(() => {
+    // No-op in live API mode
   }, [])
 
   const value = useMemo(
@@ -122,10 +113,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register,
       logout,
       switchUser,
-      demoUsers,
+      demoUsers: [],
       refreshProfile: loadProfile,
     }),
-    [user, isLoading, login, register, logout, switchUser, demoUsers, loadProfile],
+    [user, isLoading, login, register, logout, switchUser, loadProfile],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

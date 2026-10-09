@@ -2,7 +2,6 @@ import { Link, NavLink, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import type { ThemeMode } from '../types'
 import { useAuth } from '../hooks/useAuth'
-import { getBackendMode, setBackendMode } from '../services/api'
 
 type AppHeaderProps = {
   themeMode: ThemeMode
@@ -11,9 +10,8 @@ type AppHeaderProps = {
 
 export function AppHeader({ themeMode, onThemeModeChange }: AppHeaderProps) {
   const navigate = useNavigate()
-  const { user, isAuthenticated, logout, demoUsers, switchUser } = useAuth()
+  const { user, isAuthenticated, logout } = useAuth()
   const [showUserMenu, setShowUserMenu] = useState(false)
-  const currentMode = getBackendMode()
 
   const handleLogout = async () => {
     setShowUserMenu(false)
@@ -21,16 +19,10 @@ export function AppHeader({ themeMode, onThemeModeChange }: AppHeaderProps) {
     navigate('/login')
   }
 
-  const handleToggleMode = () => {
-    const nextMode = currentMode === 'mock' ? 'api' : 'mock'
-    setBackendMode(nextMode)
-    window.location.reload()
-  }
-
   return (
     <header className="app-header">
       <div className="app-header-inner">
-        {/* Left: Brand Identity in a single compact row */}
+        {/* Left: Brand Identity */}
         <div className="header-brand-group">
           <Link to="/timeline" className="brand-link" aria-label="ProbSol Materialised Home">
             <div className="brand-badge-icon" aria-hidden="true">
@@ -43,7 +35,7 @@ export function AppHeader({ themeMode, onThemeModeChange }: AppHeaderProps) {
           </Link>
         </div>
 
-        {/* Center: Single-line Primary Navigation (Capture & Timeline) */}
+        {/* Center: Primary Navigation (Capture & Timeline) */}
         <nav className="header-nav-tabs" aria-label="Primary Navigation">
           <NavLink
             to="/capture"
@@ -61,22 +53,18 @@ export function AppHeader({ themeMode, onThemeModeChange }: AppHeaderProps) {
           </NavLink>
         </nav>
 
-        {/* Right: Controls in a single horizontal line */}
+        {/* Right: Controls (Live API Status, Theme, Auth) */}
         <div className="header-controls">
-          {/* Backend Mode Indicator Badge */}
-          <button
-            type="button"
-            className={`backend-mode-badge ${currentMode === 'mock' ? 'is-mock' : 'is-api'}`}
-            onClick={handleToggleMode}
-            title={`Toggle Backend: Click to switch between Mock Vault and Live REST API. Current: ${currentMode.toUpperCase()}`}
+          {/* Live API Status Badge (Permanent Live REST API) */}
+          <div
+            className="backend-mode-badge is-api"
+            title="Connected to ProbSol Live REST API"
           >
             <span className="mode-dot" aria-hidden="true" />
-            <span className="mode-text">
-              {currentMode === 'mock' ? 'Mock Vault' : 'Live API'}
-            </span>
-          </button>
+            <span className="mode-text">Live API</span>
+          </div>
 
-          {/* Clean Segmented Theme Switcher */}
+          {/* Theme Switcher */}
           <div className="theme-switch-pill" role="radiogroup" aria-label="Theme selector">
             <button
               type="button"
@@ -133,27 +121,6 @@ export function AppHeader({ themeMode, onThemeModeChange }: AppHeaderProps) {
                     <p className="dropdown-user-name">{user.displayName}</p>
                     <p className="dropdown-user-email">{user.email}</p>
                   </div>
-
-                  {demoUsers.length > 1 ? (
-                    <div className="dropdown-switch-section">
-                      <span className="dropdown-section-title">Switch Workspace:</span>
-                      {demoUsers.map((demo) => (
-                        <button
-                          key={demo.id}
-                          type="button"
-                          className={`switch-user-item ${demo.id === user.id ? 'is-active' : ''}`}
-                          onClick={() => {
-                            switchUser(demo.id)
-                            setShowUserMenu(false)
-                          }}
-                        >
-                          <span className="mini-avatar">{demo.displayName.charAt(0)}</span>
-                          <span className="switch-user-name">{demo.displayName}</span>
-                          {demo.id === user.id ? <span className="active-check">✓</span> : null}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
 
                   <div className="dropdown-actions">
                     <button
