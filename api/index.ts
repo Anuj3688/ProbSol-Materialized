@@ -11,7 +11,7 @@ interface ProxyResponse {
   status: (code: number) => ProxyResponse
   json: (body: unknown) => void
   setHeader: (name: string, value: string | string[]) => void
-  send: (body: Uint8Array) => void
+  send: (body: string | Buffer | unknown) => void
 }
 
 const TARGET_BACKEND = 'https://probsol-backend.onrender.com/api/v1'
@@ -121,9 +121,8 @@ export default async function handler(req: ProxyRequest, res: ProxyResponse) {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept')
 
     res.status(response.status)
-    const body = await response.arrayBuffer()
-    const bytes = new Uint8Array(body)
-    res.send(bytes)
+    const text = await response.text()
+    res.send(text)
   } catch (error) {
     res.status(502).json({
       success: false,
