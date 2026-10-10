@@ -1937,3 +1937,464 @@ textarea:focus-visible {
     transform: rotate(360deg);
   }
 }
+
+/* --------------------------------------------------------------------------
+   Mobile Bottom Navigation Bar (Phone & Tablet)
+   -------------------------------------------------------------------------- */
+
+.mobile-bottom-nav {
+  display: none;
+}
+
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVE SYSTEM
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  /* 1. App Header on Mobile */
+  .app-header {
+    padding: max(8px, env(safe-area-inset-top)) 14px 8px;
+  }
+
+  .app-header-inner {
+    gap: 10px;
+  }
+
+  .brand-link {
+    gap: 8px;
+  }
+
+  .brand-badge-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 0.88rem;
+    border-radius: 8px;
+  }
+
+  .brand-name {
+    font-size: 1rem;
+  }
+
+  .brand-tagline {
+    display: none;
+  }
+
+  /* Hide center tabs from top header on mobile - bottom nav takes over */
+  .header-nav-tabs {
+    display: none;
+  }
+
+  .header-controls {
+    gap: 6px;
+  }
+
+  /* Compact Live API Badge */
+  .backend-mode-badge {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+    gap: 5px;
+  }
+
+  /* Compact Theme Switcher (Icons only on phones) */
+  .theme-switch-pill {
+    padding: 2px;
+  }
+
+  .theme-switch-option {
+    padding: 5px 7px;
+  }
+
+  .theme-switch-option span {
+    display: none;
+  }
+
+  /* Compact User Profile Button */
+  .user-avatar-btn {
+    padding: 3px 6px 3px 3px;
+    gap: 5px;
+  }
+
+  .user-display-name {
+    display: none;
+  }
+
+  .user-initial {
+    width: 24px;
+    height: 24px;
+    font-size: 0.72rem;
+  }
+
+  .header-signin-btn {
+    padding: 5px 12px;
+    font-size: 0.76rem;
+  }
+
+  /* 2. Mobile Bottom Navigation Bar */
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    height: calc(56px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--surface);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+    align-items: center;
+    justify-content: space-around;
+  }
+
+  .mobile-nav-tab {
+    flex: 1;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    text-decoration: none;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    position: relative;
+    transition: color 150ms ease, transform 120ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .mobile-nav-tab:active {
+    transform: scale(0.96);
+  }
+
+  .mobile-nav-tab.is-active {
+    color: var(--accent);
+  }
+
+  .mobile-nav-tab.is-active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 32px;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 0 0 3px 3px;
+    box-shadow: 0 2px 6px var(--accent-glow);
+  }
+
+  .mobile-nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-nav-label {
+    line-height: 1;
+  }
+
+  /* 3. App Main Area & Scrolling */
+  .app-main {
+    padding: 16px 14px calc(80px + env(safe-area-inset-bottom));
+    max-width: 100%;
+  }
+
+  .page-stack {
+    gap: 18px;
+  }
+
+  /* 4. Note Composer (Capture Page) on Mobile */
+  .note-editor-page {
+    padding-top: 0;
+  }
+
+  .editor-top-meta {
+    padding: 0 2px 8px;
+  }
+
+  .hotkey-tip {
+    display: none;
+  }
+
+  .editor-breadcrumb {
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .note-composer-card {
+    border-radius: 16px;
+  }
+
+  .note-toolbar-row {
+    padding: 10px 12px;
+    gap: 10px;
+    justify-content: space-between;
+  }
+
+  .toolbar-segment {
+    gap: 6px;
+  }
+
+  .toolbar-label {
+    font-size: 0.65rem;
+  }
+
+  .tech-pill-btn {
+    padding: 5px 9px;
+    font-size: 0.74rem;
+  }
+
+  .note-title-wrapper {
+    padding: 14px 14px 6px;
+  }
+
+  .note-title-field {
+    font-size: 1.15rem;
+    line-height: 1.35;
+  }
+
+  .note-body-wrapper {
+    padding: 8px 14px 12px;
+  }
+
+  .note-body-field {
+    font-size: 0.94rem;
+    min-height: 130px;
+  }
+
+  .note-tags-row {
+    padding: 10px 14px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .tags-input-group {
+    width: 100%;
+  }
+
+  .tag-quick-suggestions {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .quick-tag-chip {
+    padding: 4px 8px;
+    font-size: 0.74rem;
+  }
+
+  .note-composer-footer {
+    padding: 12px 14px;
+    flex-direction: column-reverse;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .footer-action-zone {
+    width: 100%;
+  }
+
+  .tech-save-btn {
+    width: 100%;
+    padding: 11px 16px;
+    font-size: 0.88rem;
+    min-height: 44px;
+    border-radius: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .footer-status-zone {
+    text-align: center;
+    width: 100%;
+  }
+
+  .footer-toast {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+
+  /* 5. Search & Filter Bar on Mobile */
+  .search-filter-container {
+    padding: 14px 12px;
+    gap: 12px;
+    border-radius: 16px;
+  }
+
+  .search-input {
+    font-size: 0.92rem;
+    padding: 9px 34px 9px 34px;
+  }
+
+  .filter-controls-grid {
+    gap: 10px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .filter-pill-group {
+    display: flex;
+    flex: 1;
+    max-width: calc(100% - 50px);
+    justify-content: space-between;
+  }
+
+  .filter-pill {
+    flex: 1;
+    text-align: center;
+    padding: 5px 6px;
+    font-size: 0.74rem;
+  }
+
+  .sort-group {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .sort-select {
+    flex: 1;
+    max-width: calc(100% - 50px);
+  }
+
+  /* 6. Timeline List & Cards on Mobile */
+  .timeline-item {
+    padding: 16px 14px;
+    border-radius: 16px;
+  }
+
+  .timeline-meta {
+    gap: 8px;
+    justify-content: space-between;
+  }
+
+  .timeline-badges {
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .timeline-actions-group {
+    gap: 6px;
+  }
+
+  .entry-action-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .timeline-content h3 {
+    font-size: 1.08rem;
+  }
+
+  .timeline-content p {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  /* 7. Auth Page (Login & Register) on Mobile */
+  .auth-page {
+    padding: 0;
+  }
+
+  .auth-card {
+    padding: 20px 16px;
+    border-radius: 20px;
+    gap: 16px;
+  }
+
+  .demo-accounts-card {
+    padding: 16px 14px;
+    border-radius: 18px;
+  }
+
+  .demo-user-buttons {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .demo-user-btn {
+    padding: 10px 12px;
+  }
+
+  /* Prevent iOS automatic zoom on text inputs by ensuring min 16px font */
+  .auth-form input,
+  .search-input,
+  .note-tags-field {
+    font-size: 16px !important;
+  }
+
+  /* 8. Modals (Edit Entry) on Mobile */
+  .modal-backdrop {
+    padding: 12px;
+  }
+
+  .modal-card {
+    width: 100%;
+    max-width: 100%;
+    padding: 18px 14px;
+    border-radius: 20px;
+    max-height: calc(100svh - 32px);
+    overflow-y: auto;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .modal-actions button {
+    width: 100%;
+    min-height: 42px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Small Phone Screens (< 420px)
+   -------------------------------------------------------------------------- */
+@media (max-width: 420px) {
+  .app-header {
+    padding: max(6px, env(safe-area-inset-top)) 10px 6px;
+  }
+
+  .backend-mode-badge .mode-text {
+    display: none;
+  }
+
+  .backend-mode-badge {
+    padding: 5px;
+    border-radius: 50%;
+  }
+
+  .note-toolbar-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .toolbar-segment {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .tech-pill-group {
+    flex: 1;
+    justify-content: space-around;
+  }
+
+  .tech-pill-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
