@@ -110,8 +110,15 @@ export default async function handler(req: ProxyRequest, res: ProxyResponse) {
 
     for (const [key, value] of response.headers.entries()) {
       const lower = key.toLowerCase()
-      if (lower === 'transfer-encoding' || lower === 'set-cookie') continue
-      if (lower.startsWith('access-control-')) continue
+      if (
+        lower === 'transfer-encoding' ||
+        lower === 'set-cookie' ||
+        lower === 'content-encoding' ||
+        lower === 'content-length' ||
+        lower.startsWith('access-control-')
+      ) {
+        continue
+      }
       res.setHeader(key, value)
     }
 
@@ -122,7 +129,12 @@ export default async function handler(req: ProxyRequest, res: ProxyResponse) {
 
     res.status(response.status)
     const text = await response.text()
-    res.send(text)
+    try {
+      const data = JSON.parse(text)
+      res.json(data)
+    } catch {
+      res.send(text)
+    }
   } catch (error) {
     res.status(502).json({
       success: false,
