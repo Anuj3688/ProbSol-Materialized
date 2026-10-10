@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { classifyAuthError, type AuthErrorInfo } from '../utils/authErrors'
 
 export function LoginPage() {
   const navigate = useNavigate()
@@ -8,11 +9,7 @@ export function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [authError, setAuthError] = useState<{
-    title: string
-    description: string
-    isCredentialsError?: boolean
-  } | null>(null)
+  const [authError, setAuthError] = useState<AuthErrorInfo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: FormEvent) => {
@@ -40,35 +37,7 @@ export function LoginPage() {
       await login(email.trim(), password)
       navigate('/timeline')
     } catch (err) {
-      const rawMessage = err instanceof Error ? err.message : 'Invalid credentials'
-      const lower = rawMessage.toLowerCase()
-
-      const isBadCreds =
-        lower.includes('invalid email or password') ||
-        lower.includes('bad credentials') ||
-        lower.includes('unauthorized') ||
-        lower.includes('invalid credentials') ||
-        lower.includes('401')
-
-      if (isBadCreds) {
-        setAuthError({
-          title: 'Incorrect Email or Password',
-          description:
-            'The email or password you entered does not match our records. Please verify your details, or create a new workspace if you haven’t registered yet.',
-          isCredentialsError: true,
-        })
-      } else if (lower.includes('network') || lower.includes('fetch') || lower.includes('failed to fetch')) {
-        setAuthError({
-          title: 'Connection Issue',
-          description:
-            'Unable to communicate with the authentication service. Please check your internet connection and try again.',
-        })
-      } else {
-        setAuthError({
-          title: 'Sign In Failed',
-          description: rawMessage,
-        })
-      }
+      setAuthError(classifyAuthError(err))
     } finally {
       setIsLoading(false)
     }
