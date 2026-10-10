@@ -29,21 +29,6 @@ export function LoginPage() {
     }
   }
 
-  const handleSeedLogin = async () => {
-    setEmail('anuj@probsol.dev')
-    setPassword('Password123!')
-    setIsLoading(true)
-    setError('')
-    try {
-      await login('anuj@probsol.dev', 'Password123!')
-      navigate('/timeline')
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Invalid credentials')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   return (
     <section className="page-stack auth-page" aria-labelledby="login-title">
       <div className="section-heading">
@@ -79,28 +64,6 @@ export function LoginPage() {
           </div>
         </div>
       ) : null}
-
-      {/* 1-Click Authentication Card for Reviewers / Seed Testing */}
-      <div className="demo-accounts-card">
-        <p className="demo-card-title">⚡ Quick Seed Account</p>
-        <p className="demo-card-subtitle">
-          1-Click sign in with the live backend seed account:
-        </p>
-        <div className="demo-user-buttons">
-          <button
-            type="button"
-            className="demo-user-btn"
-            onClick={handleSeedLogin}
-            disabled={isLoading}
-          >
-            <span className="demo-avatar">A</span>
-            <span className="demo-details">
-              <strong>Anuj Tiwari (Seed Account)</strong>
-              <small>anuj@probsol.dev • Password123!</small>
-            </span>
-          </button>
-        </div>
-      </div>
 
       <div className="auth-card">
         <form onSubmit={handleSubmit} className="auth-form" noValidate>
