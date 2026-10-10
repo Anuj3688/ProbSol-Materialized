@@ -47,6 +47,13 @@ export function getApiBaseUrl(): string {
     ''
   ).trim()
   const trimmed = raw.replace(/\/+$/, '')
+
+  // In the browser, always use the same-origin reverse proxy /api/v1 when pointing to Render.
+  // Direct cross-origin calls to Render trigger browser OPTIONS preflights which Spring Boot rejects with 403.
+  if (typeof window !== 'undefined' && (trimmed.includes('onrender.com') || !trimmed || trimmed === '/api/v1')) {
+    return '/api/v1'
+  }
+
   if (!trimmed) {
     return '/api/v1'
   }

@@ -5,15 +5,18 @@ import { VitePWA } from 'vite-plugin-pwa'
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const rawApiUrl = env.VITE_API_URL || env.VITE_API_BASE_URL
-  let targetOrigin = rawApiUrl || ''
+  const rawApiUrl =
+    (env.VITE_API_BASE_URL?.startsWith('http') ? env.VITE_API_BASE_URL : null) ||
+    (env.VITE_API_URL?.startsWith('http') ? env.VITE_API_URL : null) ||
+    'https://probsol-backend.onrender.com'
+  let targetOrigin = rawApiUrl
   try {
     if (targetOrigin.startsWith('http')) {
       const parsed = new URL(targetOrigin)
       targetOrigin = parsed.origin
     }
   } catch {
-    // Keep rawApiUrl as fallback
+    targetOrigin = 'https://probsol-backend.onrender.com'
   }
 
   return {
@@ -24,6 +27,9 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           secure: true,
           followRedirects: true,
+          headers: {
+            Origin: 'http://localhost:5173',
+          },
         },
       },
     } : {},

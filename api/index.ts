@@ -20,6 +20,19 @@ const API_BASE_URL =
   'https://probsol-backend.onrender.com/api/v1'
 
 export default async function handler(req: ProxyRequest, res: ProxyResponse) {
+  const clientOrigin = (req.headers?.origin as string) || '*'
+
+  // Handle CORS preflight directly to avoid 403 from upstream
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Origin', clientOrigin)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept')
+    res.setHeader('Access-Control-Max-Age', '86400')
+    res.status(200).send(new Uint8Array(0))
+    return
+  }
+
   const targetUrl = API_BASE_URL.replace(/\/+$/, '')
   const requestUrl = new URL(req.url || '/', `http://${req.headers?.host || 'localhost'}`)
   let pathname = requestUrl.pathname
@@ -37,6 +50,9 @@ export default async function handler(req: ProxyRequest, res: ProxyResponse) {
     }
     headers[key] = Array.isArray(value) ? value.join(',') : String(value)
   }
+
+  // Satisfy Spring Boot's strict allowed origins whitelist (which only permits http://localhost:5173)
+  headers['origin'] = 'http://localhost:5173'
 
   try {
     const fetchOptions: RequestInit = {
@@ -62,8 +78,14 @@ export default async function handler(req: ProxyRequest, res: ProxyResponse) {
     for (const [key, value] of response.headers.entries()) {
       const lower = key.toLowerCase()
       if (lower === 'transfer-encoding' || lower === 'set-cookie') continue
+      if (lower.startsWith('access-control-')) continue
       res.setHeader(key, value)
     }
+
+    res.setHeader('Access-Control-Allow-Origin', clientOrigin)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept')
 
     res.status(response.status)
     const body = await response.arrayBuffer()
