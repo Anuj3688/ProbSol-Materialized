@@ -1803,6 +1803,112 @@
   gap: 16px;
 }
 
+/* Auth Alert Banner for Incorrect Credentials */
+.auth-alert-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--problem-soft);
+  border: 1px solid var(--problem-border);
+  border-radius: 14px;
+  padding: 14px 16px;
+  animation: shakeAlert 300ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shakeAlert {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+  100% { transform: translateX(0); }
+}
+
+.alert-icon-zone {
+  color: var(--problem);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+}
+
+.alert-text-zone {
+  display: grid;
+  gap: 4px;
+}
+
+.alert-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--problem);
+  line-height: 1.25;
+}
+
+.alert-description {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text);
+  line-height: 1.45;
+  opacity: 0.92;
+}
+
+.alert-action-hint {
+  margin: 6px 0 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.alert-register-link {
+  color: var(--accent);
+  font-weight: 800;
+  text-decoration: underline;
+  margin-left: 2px;
+}
+
+.alert-register-link:hover {
+  filter: brightness(1.15);
+}
+
+/* Error highlight on input fields */
+.auth-form input.input-error {
+  border-color: var(--problem) !important;
+  background: var(--problem-soft) !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important;
+}
+
+/* Label row with show/hide password toggle */
+.field-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.toggle-password-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: all 120ms ease;
+  font-family: inherit;
+}
+
+.toggle-password-btn:hover {
+  color: var(--text);
+  background: var(--control-bg-hover);
+}
+
+.password-input-wrapper {
+  position: relative;
+  width: 100%;
+}
+
 .auth-submit-btn {
   margin-top: 6px;
 }
