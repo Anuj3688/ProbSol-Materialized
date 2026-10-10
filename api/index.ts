@@ -14,10 +14,7 @@ interface ProxyResponse {
   send: (body: Uint8Array) => void
 }
 
-const API_BASE_URL =
-  process.env.VITE_API_URL ||
-  process.env.VITE_API_BASE_URL ||
-  'https://probsol-backend.onrender.com/api/v1'
+const TARGET_BACKEND = 'https://probsol-backend.onrender.com/api/v1'
 
 export default async function handler(req: ProxyRequest, res: ProxyResponse) {
   const clientOrigin = (req.headers?.origin as string) || '*'
@@ -33,25 +30,61 @@ export default async function handler(req: ProxyRequest, res: ProxyResponse) {
     return
   }
 
-  const targetUrl = API_BASE_URL.replace(/\/+$/, '')
   const requestUrl = new URL(req.url || '/', `http://${req.headers?.host || 'localhost'}`)
-  let pathname = requestUrl.pathname
-  if (targetUrl.endsWith('/api/v1')) {
-    pathname = pathname.replace(/^\/api\/v1/, '') || ''
-  } else if (targetUrl.endsWith('/api')) {
-    pathname = pathname.replace(/^\/api/, '') || ''
+  const proxyPath = requestUrl.searchParams.get('_proxy_path')
+
+  let subPath: string
+  if (proxyPath) {
+    subPath = proxyPath.replace(/^v1\/?/, '').replace(/^\//, '')
+    requestUrl.searchParams.delete('_proxy_path')
+  } else {
+    let p = requestUrl.pathname
+    p = p.replace(/^\/api\/v1\/?/, '').replace(/^\/api\/?/, '')
+    subPath = p.replace(/^\//, '')
   }
-  const target = `${targetUrl}${pathname.startsWith('/') ? '' : (pathname ? '/' : '')}${pathname}${requestUrl.search}`
+
+  const query = requestUrl.searchParams.toString() ? `?${requestUrl.searchParams.toString()}` : ''
+  const target = `${TARGET_BACKEND}/${subPath}${query}`
+
+  // Parse request body reliably across Vercel environments
+  let bodyPayload: string | undefined = undefined
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    if (typeof req.body === 'string') {
+      bodyPayload = req.body
+    } else if (Buffer.isBuffer(req.body)) {
+      bodyPayload = (req.body as Buffer).toString('utf-8')
+    } else if (req.body && typeof req.body === 'object') {
+      bodyPayload = JSON.stringify(req.body)
+    } else {
+      type StreamEmitter = { on?: (event: string, cb: (c?: unknown) => void) => void }
+      const emitter = req as StreamEmitter
+      if (typeof emitter.on === 'function') {
+        bodyPayload = await new Promise<string>((resolve) => {
+          let str = ''
+          emitter.on?.('data', (chunk: unknown) => {
+            str += String(chunk ?? '')
+          })
+          emitter.on?.('end', () => resolve(str))
+          emitter.on?.('error', () => resolve(''))
+        })
+      }
+    }
+  }
 
   const headers: Record<string, string> = {}
   for (const [key, value] of Object.entries(req.headers || {})) {
-    if (!value || key.toLowerCase() === 'host') {
+    const lower = key.toLowerCase()
+    if (!value || lower === 'host' || lower === 'content-length' || lower === 'connection') {
       continue
     }
-    headers[key] = Array.isArray(value) ? value.join(',') : String(value)
+    headers[lower] = Array.isArray(value) ? value.join(',') : String(value)
   }
 
-  // Satisfy Spring Boot's strict allowed origins whitelist (which only permits http://localhost:5173)
+  if (bodyPayload && !headers['content-type']) {
+    headers['content-type'] = 'application/json'
+  }
+
+  // Satisfy Spring Boot CORS whitelist on Render
   headers['origin'] = 'http://localhost:5173'
 
   try {
@@ -61,8 +94,8 @@ export default async function handler(req: ProxyRequest, res: ProxyResponse) {
       redirect: 'manual',
     }
 
-    if (req.method !== 'GET' && req.method !== 'HEAD') {
-      fetchOptions.body = req.body && typeof req.body === 'object' ? JSON.stringify(req.body) : String(req.body || '')
+    if (bodyPayload !== undefined) {
+      fetchOptions.body = bodyPayload
     }
 
     const response = await fetch(target, fetchOptions)

@@ -47,7 +47,8 @@ export function LoginPage() {
         lower.includes('invalid email or password') ||
         lower.includes('bad credentials') ||
         lower.includes('unauthorized') ||
-        lower.includes('invalid credentials')
+        lower.includes('invalid credentials') ||
+        lower.includes('401')
 
       if (isBadCreds) {
         setAuthError({

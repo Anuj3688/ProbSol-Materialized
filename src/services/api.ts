@@ -192,12 +192,18 @@ export async function apiClient<T>(
     json = await response.json()
   } catch {
     if (!response.ok) {
+      if (response.status === 401) {
+        throw new Error('Invalid email or password')
+      }
       throw new Error(`Request failed with status ${response.status}`)
     }
     return { success: true } as ApiResponse<T>
   }
 
   if (!response.ok || !json.success) {
+    if (response.status === 401) {
+      throw new Error(json.error || json.message || 'Invalid email or password')
+    }
     const errorMsg = json.error || json.message || `Request failed with status ${response.status}`
     throw new Error(errorMsg)
   }
