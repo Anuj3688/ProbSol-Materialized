@@ -115,4 +115,72 @@ describe('Vercel Reverse Proxy (api/index.ts)', () => {
       data: { user: { email: 'anuj@probsol.dev' }, accessToken: 'token-abc' },
     })
   })
+
+  it('automatically retries and recovers when upstream encounters transient database locks (SQLITE_BUSY)', async () => {
+    let callCount = 0
+
+    globalThis.fetch = vi.fn().mockImplementation(async () => {
+      callCount++
+      if (callCount === 1) {
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: 'could not execute statement [[SQLITE_BUSY] The database file is locked]',
+          }),
+          {
+            status: 500,
+            headers: { 'content-type': 'application/json' },
+          },
+        )
+      }
+      return new Response(
+        JSON.stringify({
+          success: true,
+          data: { user: { email: 'retry-user@probsol.dev' }, accessToken: 'token-recovered' },
+        }),
+        {
+          status: 201,
+          headers: { 'content-type': 'application/json' },
+        },
+      )
+    })
+
+    let statusCode = 0
+    let jsonBody: unknown = null
+
+    const req = {
+      method: 'POST',
+      url: '/api?_proxy_path=v1/auth/register',
+      headers: {
+        origin: 'https://prob-sol-materialized.vercel.app',
+      },
+      body: {
+        email: 'retry-user@probsol.dev',
+        displayName: 'Retry User',
+        password: 'Password123!',
+      },
+    }
+
+    const res = {
+      status(code: number) {
+        statusCode = code
+        return this
+      },
+      setHeader() {},
+      json(body: unknown) {
+        jsonBody = body
+      },
+      send() {},
+    }
+
+    await handler(req, res)
+
+    expect(callCount).toBe(2)
+    expect(statusCode).toBe(201)
+    expect(jsonBody).toEqual({
+      success: true,
+      data: { user: { email: 'retry-user@probsol.dev' }, accessToken: 'token-recovered' },
+    })
+  })
 })
+

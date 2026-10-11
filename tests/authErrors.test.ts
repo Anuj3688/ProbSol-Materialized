@@ -19,6 +19,37 @@ describe('Authentication Error Classification (classifyAuthError)', () => {
     }
   })
 
+  it('correctly classifies duplicate email registration errors', () => {
+    const errorCases = [
+      new Error('Email is already registered'),
+      new Error('User with this email already exists'),
+      new Error('Email already in use'),
+    ]
+
+    for (const err of errorCases) {
+      const result = classifyAuthError(err)
+      expect(result.title).toBe('Email Already Registered')
+      expect(result.isAlreadyRegistered).toBe(true)
+      expect(result.description).toContain('Please sign in instead')
+    }
+  })
+
+  it('correctly classifies registration password and email validation errors', () => {
+    const pwdResult = classifyAuthError(new Error('Password must be between 6 and 100 characters'))
+    expect(pwdResult.title).toBe('Password Requirement')
+    expect(pwdResult.description).toContain('at least 6 characters')
+
+    const emailResult = classifyAuthError(new Error('Email must be valid'))
+    expect(emailResult.title).toBe('Invalid Email Address')
+    expect(emailResult.description).toContain('valid email format')
+  })
+
+  it('correctly classifies database lock and concurrency issues', () => {
+    const result = classifyAuthError(new Error('[SQLITE_BUSY] The database file is locked (database is locked)'))
+    expect(result.title).toBe('Database Busy')
+    expect(result.description).toContain('momentarily busy processing another request')
+  })
+
   it('correctly classifies network and offline connection issues', () => {
     const errorCases = [
       new Error('Failed to fetch'),
@@ -51,7 +82,7 @@ describe('Authentication Error Classification (classifyAuthError)', () => {
 
   it('preserves specific custom backend error messages if not matching standard codes', () => {
     const result = classifyAuthError(new Error('User account is temporarily locked'))
-    expect(result.title).toBe('Sign In Failed')
+    expect(result.title).toBe('Action Failed')
     expect(result.description).toBe('User account is temporarily locked')
   })
 

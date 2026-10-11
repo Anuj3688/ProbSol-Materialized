@@ -2,16 +2,50 @@ export interface AuthErrorInfo {
   title: string
   description: string
   isCredentialsError?: boolean
+  isAlreadyRegistered?: boolean
 }
 
 /**
  * Normalizes and categorizes raw error strings or exceptions from authentication calls
- * into human-friendly, actionable feedback.
+ * (login, registration, password reset) into human-friendly, actionable feedback.
  */
 export function classifyAuthError(err: unknown): AuthErrorInfo {
   const rawMessage = err instanceof Error ? err.message : String(err || 'Authentication failed')
   const lower = rawMessage.toLowerCase()
 
+  // 1. Duplicate email during registration
+  if (lower.includes('already registered') || lower.includes('already in use') || lower.includes('already exists')) {
+    return {
+      title: 'Email Already Registered',
+      description: 'An account with this email address already exists. Please sign in instead.',
+      isAlreadyRegistered: true,
+    }
+  }
+
+  // 2. Validation constraints
+  if (lower.includes('password must be')) {
+    return {
+      title: 'Password Requirement',
+      description: 'Your password must be at least 6 characters long.',
+    }
+  }
+
+  if (lower.includes('email must be valid') || lower.includes('invalid email address')) {
+    return {
+      title: 'Invalid Email Address',
+      description: 'Please enter a valid email format (e.g. you@example.com).',
+    }
+  }
+
+  // 3. Database lock / SQLite concurrency
+  if (lower.includes('database is locked') || lower.includes('sqlite_busy') || lower.includes('database locked')) {
+    return {
+      title: 'Database Busy',
+      description: 'The server database was momentarily busy processing another request. Please try submitting again in a few moments.',
+    }
+  }
+
+  // 4. Bad credentials on sign-in
   const isBadCreds =
     lower.includes('invalid email or password') ||
     lower.includes('bad credentials') ||
@@ -28,6 +62,7 @@ export function classifyAuthError(err: unknown): AuthErrorInfo {
     }
   }
 
+  // 5. Network / offline issues
   const isNetworkIssue =
     lower.includes('network') ||
     lower.includes('fetch') ||
@@ -43,6 +78,7 @@ export function classifyAuthError(err: unknown): AuthErrorInfo {
     }
   }
 
+  // 6. Upstream server / Gateway errors
   const isServerError =
     lower.includes('500') ||
     lower.includes('502') ||
@@ -60,7 +96,7 @@ export function classifyAuthError(err: unknown): AuthErrorInfo {
   }
 
   return {
-    title: 'Sign In Failed',
+    title: 'Action Failed',
     description: rawMessage,
   }
 }

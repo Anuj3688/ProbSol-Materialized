@@ -98,7 +98,39 @@ export default async function handler(req: ProxyRequest, res: ProxyResponse) {
       fetchOptions.body = bodyPayload
     }
 
-    const response = await fetch(target, fetchOptions)
+    let response: Response | null = null
+    let responseText = ''
+    const maxAttempts = 3
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        response = await fetch(target, fetchOptions)
+        responseText = await response.text()
+
+        const isDbLocked =
+          response.status === 500 &&
+          (responseText.includes('SQLITE_BUSY') || responseText.includes('locked'))
+        const isColdBoot =
+          (response.status === 502 || response.status === 503) && attempt < maxAttempts
+
+        if ((isDbLocked || isColdBoot) && attempt < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, attempt * 300))
+          continue
+        }
+
+        break
+      } catch (err) {
+        if (attempt < maxAttempts) {
+          await new Promise((resolve) => setTimeout(resolve, attempt * 300))
+          continue
+        }
+        throw err
+      }
+    }
+
+    if (!response) {
+      throw new Error('No response received from upstream backend')
+    }
 
     // Forward Set-Cookie headers properly
     if ('getSetCookie' in response.headers && typeof response.headers.getSetCookie === 'function') {
@@ -128,12 +160,11 @@ export default async function handler(req: ProxyRequest, res: ProxyResponse) {
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept')
 
     res.status(response.status)
-    const text = await response.text()
     try {
-      const data = JSON.parse(text)
+      const data = JSON.parse(responseText)
       res.json(data)
     } catch {
-      res.send(text)
+      res.send(responseText)
     }
   } catch (error) {
     res.status(502).json({
