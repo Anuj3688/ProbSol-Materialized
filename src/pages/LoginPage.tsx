@@ -1,16 +1,30 @@
-import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useState, useEffect, type FormEvent } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { classifyAuthError, type AuthErrorInfo } from '../utils/authErrors'
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { user, isAuthenticated, logout, login } = useAuth()
-  const [email, setEmail] = useState('')
+
+  const stateEmail = (location.state as { email?: string } | null)?.email || ''
+  const queryEmail = new URLSearchParams(location.search).get('email') || ''
+  const [email, setEmail] = useState(stateEmail || queryEmail)
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [authError, setAuthError] = useState<AuthErrorInfo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showColdBootNotice, setShowColdBootNotice] = useState(false)
+
+  // Track cold-boot duration to reassure waiting users
+  useEffect(() => {
+    if (!isLoading) return
+    const timer = setTimeout(() => {
+      setShowColdBootNotice(true)
+    }, 2500)
+    return () => clearTimeout(timer)
+  }, [isLoading])
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -40,6 +54,7 @@ export function LoginPage() {
       setAuthError(classifyAuthError(err))
     } finally {
       setIsLoading(false)
+      setShowColdBootNotice(false)
     }
   }
 
@@ -68,12 +83,13 @@ export function LoginPage() {
             </button>
             <button
               type="button"
-              className="secondary-action"
+              className="ghost-action"
               onClick={async () => {
                 await logout()
+                setAuthError(null)
               }}
             >
-              Sign Out / Switch User
+              Sign out
             </button>
           </div>
         </div>
@@ -101,6 +117,16 @@ export function LoginPage() {
                     </Link>
                   </p>
                 ) : null}
+                {!authError.isCredentialsError && (
+                  <button
+                    type="button"
+                    className="alert-retry-btn"
+                    onClick={handleSubmit}
+                    disabled={isLoading}
+                  >
+                    ↻ Try Again
+                  </button>
+                )}
               </div>
             </div>
           ) : null}
@@ -154,11 +180,23 @@ export function LoginPage() {
           <button type="submit" className="primary-action auth-submit-btn" disabled={isLoading}>
             {isLoading ? 'Signing in...' : 'Sign in'}
           </button>
+
+          {showColdBootNotice ? (
+            <div className="auth-coldboot-notice" role="status">
+              <div className="coldboot-spinner" aria-hidden="true" />
+              <div>
+                <strong>Waking cloud server…</strong>
+                <p style={{ margin: '3px 0 0', opacity: 0.88, fontSize: '0.78rem' }}>
+                  Cloud database wakes up automatically from sleep. This takes a few seconds on the first visit — please hold tight!
+                </p>
+              </div>
+            </div>
+          ) : null}
         </form>
 
         <div className="auth-footer-links">
           <p>
-            Don&apos;t have an account? <Link to="/register">Create one</Link>
+            Need a fresh workspace? <Link to="/register">Create an account</Link>
           </p>
         </div>
       </div>

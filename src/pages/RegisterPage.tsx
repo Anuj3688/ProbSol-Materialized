@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import { classifyAuthError, type AuthErrorInfo } from '../utils/authErrors'
@@ -12,9 +12,19 @@ export function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [authError, setAuthError] = useState<AuthErrorInfo | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [showColdBootNotice, setShowColdBootNotice] = useState(false)
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
+  // Track cold-boot duration so the user knows the server is warming up
+  useEffect(() => {
+    if (!isLoading) return
+    const timer = setTimeout(() => {
+      setShowColdBootNotice(true)
+    }, 2500)
+    return () => clearTimeout(timer)
+  }, [isLoading])
+
+  const handleSubmit = async (e?: FormEvent) => {
+    if (e) e.preventDefault()
     setAuthError(null)
 
     const trimmedName = displayName.trim()
@@ -69,8 +79,11 @@ export function RegisterPage() {
       setAuthError(classifyAuthError(err))
     } finally {
       setIsLoading(false)
+      setShowColdBootNotice(false)
     }
   }
+
+  const isPasswordValid = password.length >= 6
 
   return (
     <section className="page-stack auth-page" aria-labelledby="register-title">
@@ -97,11 +110,25 @@ export function RegisterPage() {
                 {authError.isAlreadyRegistered ? (
                   <p className="alert-action-hint">
                     Already have an account?{' '}
-                    <Link to="/login" className="alert-register-link">
-                      Sign in here →
+                    <Link
+                      to="/login"
+                      state={{ email: email.trim() }}
+                      className="alert-register-link"
+                    >
+                      Sign in with {email.trim() || 'your email'} →
                     </Link>
                   </p>
                 ) : null}
+                {!authError.isAlreadyRegistered && (
+                  <button
+                    type="button"
+                    className="alert-retry-btn"
+                    onClick={() => handleSubmit()}
+                    disabled={isLoading}
+                  >
+                    ↻ Try Again
+                  </button>
+                )}
               </div>
             </div>
           ) : null}
@@ -155,6 +182,7 @@ export function RegisterPage() {
             <div className="password-input-wrapper">
               <input
                 type={showPassword ? 'text' : 'password'}
+                className={authError?.title?.includes('Password') ? 'input-error' : ''}
                 value={password}
                 onChange={(e) => {
                   setPassword(e.target.value)
@@ -165,11 +193,32 @@ export function RegisterPage() {
                 autoComplete="new-password"
               />
             </div>
+            <span className={`field-hint ${isPasswordValid ? 'is-valid' : ''}`}>
+              {isPasswordValid ? (
+                <>✓ Password meets length requirements</>
+              ) : password.length > 0 ? (
+                <>🔒 At least 6 characters ({password.length}/6)</>
+              ) : (
+                <>🔒 Must be at least 6 characters long</>
+              )}
+            </span>
           </label>
 
           <button type="submit" className="primary-action auth-submit-btn" disabled={isLoading}>
             {isLoading ? 'Creating workspace...' : 'Create workspace'}
           </button>
+
+          {showColdBootNotice ? (
+            <div className="auth-coldboot-notice" role="status">
+              <div className="coldboot-spinner" aria-hidden="true" />
+              <div>
+                <strong>Waking cloud server…</strong>
+                <p style={{ margin: '3px 0 0', opacity: 0.88, fontSize: '0.78rem' }}>
+                  Cloud database wakes up automatically from sleep. This takes a few seconds on the first visit — please hold tight!
+                </p>
+              </div>
+            </div>
+          ) : null}
         </form>
 
         <div className="auth-footer-links">
